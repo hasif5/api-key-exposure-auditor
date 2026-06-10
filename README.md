@@ -58,15 +58,51 @@ network only to (a) fetch a page's own linked scripts for scanning, and (b)
 reach Google endpoints during an audit you trigger. There is no telemetry and no
 backend server.
 
-## Install (load unpacked)
+## Install
 
-This is an unpacked developer extension — no build step.
+No build step — this is an unpacked Manifest V3 extension. Pick whichever path
+you prefer; all three end with the same one-time **Load unpacked** step.
 
-1. Clone or download this repository.
-2. Open `chrome://extensions` (Chrome) or `edge://extensions` (Edge).
-3. Enable **Developer mode**.
-4. Click **Load unpacked** and select the project folder.
-5. Pin the extension and browse — the toolbar badge shows the number of distinct keys found on the active tab.
+> **Why Developer mode?** Chrome and Edge only allow one-click installs from their
+> official stores. Any unpacked extension requires Developer mode — this is normal
+> and the extension runs entirely on your machine (no backend, no telemetry).
+
+### Option 1 — one command (downloads + unpacks for you)
+
+**Windows (PowerShell):**
+```powershell
+iwr -useb https://raw.githubusercontent.com/hasif5/google-api-key-exposure-auditor/main/install.ps1 | iex
+```
+**macOS / Linux:**
+```bash
+curl -fsSL https://raw.githubusercontent.com/hasif5/google-api-key-exposure-auditor/main/install.sh | bash
+```
+The script drops the extension in your home folder and prints the load steps.
+
+### Option 2 — download the zip (no terminal)
+
+1. Grab the latest `.zip` from the [**Releases**](https://github.com/hasif5/google-api-key-exposure-auditor/releases/latest) page and unzip it.
+
+### Option 3 — clone (for developers)
+
+```bash
+git clone https://github.com/hasif5/google-api-key-exposure-auditor.git
+```
+
+### Then, in any case — load it (one time)
+
+1. Open `chrome://extensions` (Chrome) or `edge://extensions` (Edge).
+2. Enable **Developer mode** (top-right toggle).
+3. Click **Load unpacked** and select the extension folder.
+4. Pin the extension and browse — the toolbar badge shows the number of distinct keys found on the active tab.
+
+> **One-click install** (no Developer mode) requires publishing to the Chrome Web
+> Store / Edge Add-ons — see the [Roadmap](#roadmap).
+
+## Roadmap
+
+- [ ] Publish to the **Chrome Web Store** and **Edge Add-ons** for one-click install (requires a developer account, store review, and a privacy-policy URL).
+- [ ] Optional screenshots / demo GIF in this README.
 
 ## Usage
 
