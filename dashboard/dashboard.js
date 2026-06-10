@@ -490,23 +490,42 @@ async function render() {
   window.scrollTo(0, scrollY); // keep the user where they were
 }
 
-// Audit every key under one domain group (order/positions stay put).
+// How many keys to audit at once. Each key itself fans out to ~14 probes
+// (internally capped at 5 concurrent), so this multiplies that — keep it modest
+// to stay under Google's rate limits.
+const KEY_AUDIT_CONCURRENCY = 4;
+
+// Run audits over a list of findings with bounded concurrency, updating progress
+// as each completes. Returns the number audited.
+async function auditMany(findings, onProgress) {
+  const total = findings.length;
+  let done = 0;
+  let idx = 0;
+  async function worker() {
+    while (idx < findings.length) {
+      const f = findings[idx++];
+      const updated = await runAudit(f.id, null);
+      if (updated && savedKeys.has(updated.key)) await saveToCollection(updated);
+      done++;
+      if (onProgress) onProgress(done, total);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(KEY_AUDIT_CONCURRENCY, total) }, worker));
+  return done;
+}
+
+// Audit every key under one domain group concurrently (positions stay put).
 async function auditGroup(findings, btn) {
   if (!findings.length) return;
   if (!ensureConsent()) return;
   const total = findings.length;
   const label = btn.textContent;
   btn.disabled = true;
-  let done = 0;
   showProgressDeterminate(0, total, 'Auditing domain 0 / ' + total);
-  for (const f of findings) {
-    btn.textContent = 'Auditing ' + (done + 1) + '/' + total + '…';
-    showProgressDeterminate(done, total, 'Auditing ' + (done + 1) + ' / ' + total + '  (' + f.key.slice(0, 12) + '…)');
-    const updated = await runAudit(f.id, null);
-    if (updated && savedKeys.has(updated.key)) await saveToCollection(updated);
-    done++;
-    showProgressDeterminate(done, total, 'Audited ' + done + ' / ' + total);
-  }
+  const done = await auditMany(findings, (d, t) => {
+    btn.textContent = 'Auditing ' + d + '/' + t + '…';
+    showProgressDeterminate(d, t, 'Audited ' + d + ' / ' + t);
+  });
   hideProgress();
   btn.disabled = false;
   btn.textContent = label;
@@ -613,21 +632,12 @@ document.getElementById('auditAllBtn').addEventListener('click', async () => {
   const queue = currentFindings.slice();
   const total = queue.length;
   btn.disabled = true;
-  let done = 0;
   showProgressDeterminate(0, total, 'Auditing 0 / ' + total);
-  for (const f of queue) {
-    showProgressDeterminate(done, total, 'Auditing ' + (done + 1) + ' / ' + total + '  (' + f.key.slice(0, 14) + '…)');
-    btn.textContent = 'Auditing ' + (done + 1) + '/' + total + '…';
-    await runAudit(f.id, null);
-    done++;
-    showProgressDeterminate(done, total, 'Audited ' + done + ' / ' + total);
-  }
+  const done = await auditMany(queue, (d, t) => {
+    btn.textContent = 'Auditing ' + d + '/' + t + '…';
+    showProgressDeterminate(d, t, 'Audited ' + d + ' / ' + t);
+  });
   hideProgress();
-  // Refresh snapshots for any audited keys that are in the collection.
-  if (savedKeys.size) {
-    const db = await getDb();
-    for (const f of db.findings) if (savedKeys.has(f.key)) await saveToCollection(f);
-  }
   btn.disabled = false;
   btn.textContent = 'Audit all';
   render();
