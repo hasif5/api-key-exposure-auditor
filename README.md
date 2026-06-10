@@ -34,7 +34,9 @@ IP / API enablement) can be assessed and reported.
   - **Maps web services** — Static Maps, Geocoding, Directions, Distance Matrix, Elevation, Time Zone, Street View metadata, Places (legacy)
   - **Maps JavaScript API loader** — parses runtime error tokens (`RefererNotAllowedMapError`, `ApiNotActivatedMapError`, …)
   - **Modern APIs** — Routes API (New), Places API (New), Roads
-  - **AI APIs** — Gemini Developer API (AI Studio) and Vertex AI express mode
+  - **AI APIs** — Gemini Developer API (AI Studio), Vertex AI express mode, Gemini embeddings
+  - **Cloud AI/ML** — Cloud Translation, Vision, Natural Language, Text-to-Speech, Speech-to-Text
+  - **Other Google Cloud / Firebase** — Firebase Identity Toolkit (Auth), YouTube Data API, Safe Browsing, Cloud Storage
 - **Restriction &amp; risk assessment.** Because probes carry no referrer and come from an arbitrary IP, any success means the key is **not** referrer/IP-locked. Unrestricted keys are flagged prominently (**CRITICAL / UNRESTRICTED**) and sorted to the top.
 - **Billing awareness.** Each probe is marked free vs billable with an approximate cost note. The default audit uses only **free** access checks; token-billing calls are strictly opt-in.
 - **Research dashboard** with a live progress bar, per-key detail, and **JSON / CSV export + import** for record-keeping.

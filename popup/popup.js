@@ -38,7 +38,7 @@ els.rescan.addEventListener('click', async () => {
 // Persisted toggles.
 chrome.storage.local.get(['gaks_ack', 'gaks_gen']).then((s) => {
   els.ack.checked = !!s.gaks_ack;
-  els.gen.checked = !!s.gaks_gen;
+  els.gen.checked = s.gaks_gen !== false; // billable probes ON by default
   refreshAuditButtons();
 });
 els.ack.addEventListener('change', () => {
