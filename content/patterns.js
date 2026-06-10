@@ -88,7 +88,7 @@ var GAKS = (function () {
     { id: 'openrouter', re: /sk-or-(?:v1-)?[A-Za-z0-9]{40,}/g },
     { id: 'xai', re: /xai-[A-Za-z0-9]{40,}/g },
     { id: 'openai', re: /sk-(?:proj|svcacct|admin)-[A-Za-z0-9_-]{20,}|sk-[A-Za-z0-9]{40,}/g },
-    { id: 'twilio', re: /AC[0-9a-fA-F]{32}/g, secret: twilioSecret }
+    { id: 'twilio', re: /AC[0-9a-fA-F]{32}/g, secret: twilioSecret, context: /twilio|account[\s_-]?sid|auth[\s_-]?token/i }
   ];
 
   // Returns [{ key, provider, snippet, mapsContext }] for every key in `text`.
@@ -103,6 +103,10 @@ var GAKS = (function () {
       while ((m = prov.re.exec(text)) !== null) {
         var key = m[0];
         if (seen[key]) continue;
+        if (prov.context) {
+          var ctx = text.slice(Math.max(0, m.index - 250), Math.min(text.length, m.index + 250));
+          if (!prov.context.test(ctx)) continue; // not enough evidence — skip
+        }
         seen[key] = true;
         var snippet = snippetAround(text, m.index, key.length);
         var secret = prov.secret ? prov.secret(text, m.index, key) : null;

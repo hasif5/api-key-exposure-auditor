@@ -194,16 +194,21 @@
     });
   }
 
-  // Skip detection entirely on ignored domains (e.g. google.com, youtube.com).
+  // Skip detection only on ignored domains; never let an ignore-check error
+  // silently disable detection.
+  function safeStart(extra) {
+    try {
+      if (GAKS.hostIsIgnored(location.hostname, extra || [])) return; // ignored page
+    } catch (e) { /* ignore-check failed → don't block detection */ }
+    try { start(); } catch (e) { /* ignore */ }
+  }
   try {
     chrome.storage.local.get('gaks_ignore_domains', function (res) {
       void chrome.runtime.lastError;
       var extra = res && Array.isArray(res.gaks_ignore_domains) ? res.gaks_ignore_domains : [];
-      if (GAKS.hostIsIgnored(location.hostname, extra)) return; // do nothing on this page
-      start();
+      safeStart(extra);
     });
   } catch (e) {
-    // storage unavailable — fall back to default-list check only.
-    if (!GAKS.hostIsIgnored(location.hostname, [])) start();
+    safeStart([]);
   }
 })();
