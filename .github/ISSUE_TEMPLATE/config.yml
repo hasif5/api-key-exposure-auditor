@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/hasif5/google-api-key-exposure-auditor/security/advisories/new
+    about: Please report vulnerabilities privately — do not open a public issue.
+  - name: Responsible disclosure guidance
+    url: https://github.com/hasif5/google-api-key-exposure-auditor/blob/main/SECURITY.md
+    about: How to handle an exposed key you discovered with this tool.

@@ -1,0 +1,54 @@
+name: Build & attach release assets
+
+# When you push a version tag (e.g. v1.2.0), build the store-ready zip and a
+# full source zip, then create/update the GitHub Release for that tag with both
+# attached. Future release flow becomes:  bump manifest version -> commit ->
+# git tag vX.Y.Z && git push origin vX.Y.Z
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate manifest (version matches tag, description <= 132)
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          VER=$(node -p "require('./manifest.json').version")
+          echo "tag=$TAG manifest=$VER"
+          if [ "$TAG" != "$VER" ]; then
+            echo "::warning::Tag ($TAG) does not match manifest version ($VER)"
+          fi
+          node -e "const d=require('./manifest.json').description; if(d.length>132){console.error('description too long: '+d.length); process.exit(1)}"
+
+      - name: Syntax-check JavaScript
+        run: |
+          for f in content/patterns.js content/content.js; do node --check "$f"; done
+          for f in background.js lib/*.js popup/popup.js dashboard/dashboard.js; do
+            node --input-type=module --check < "$f"
+          done
+
+      - name: Build store zip
+        run: bash build.sh
+
+      - name: Build source zip
+        run: |
+          git archive --format=zip \
+            --prefix=google-api-key-exposure-auditor/ \
+            -o "google-api-key-exposure-auditor-${GITHUB_REF_NAME}.zip" HEAD
+
+      - name: Create / update release with assets
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            dist/google-api-key-exposure-auditor-store.zip
+            google-api-key-exposure-auditor-${{ github.ref_name }}.zip

@@ -172,8 +172,10 @@ icons/                  extension icons
 
 ## Contributing
 
-Issues and PRs are welcome. Please keep the **authorized-use** framing intact and
-do not add features whose primary purpose is unauthorized exploitation.
+Issues and PRs are welcome — see [CONTRIBUTING.md](./CONTRIBUTING.md). Please keep
+the **authorized-use** framing intact and do not add features whose primary
+purpose is unauthorized exploitation. Report vulnerabilities privately per
+[SECURITY.md](./SECURITY.md).
 
 ## Privacy
 

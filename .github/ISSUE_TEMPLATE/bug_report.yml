@@ -1,0 +1,57 @@
+name: Bug report
+description: Something isn't working as expected
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report! **Never paste real API keys** or any credential
+        that isn't yours — redact keys (e.g. `AIzaSy…REDACTED`).
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the bug and what you expected instead.
+      placeholder: When I open the dashboard and click Audit all, …
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Load unpacked
+        2. Visit …
+        3. Click …
+    validations:
+      required: true
+  - type: dropdown
+    id: browser
+    attributes:
+      label: Browser
+      options:
+        - Chrome
+        - Edge
+        - Other Chromium
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: Browser & extension version
+      placeholder: "Chrome 126 · extension v1.1.0"
+    validations:
+      required: true
+  - type: textarea
+    id: console
+    attributes:
+      label: Console / service-worker errors (optional)
+      description: From chrome://extensions → Inspect views → service worker, or the page console.
+      render: shell
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: Confirmation
+      options:
+        - label: I have not included any real API keys or credentials that aren't mine.
+          required: true
