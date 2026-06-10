@@ -41,6 +41,10 @@ See the [README](./README.md#project-structure) for the layout.
   node --check content/patterns.js content/content.js          # plain scripts
   node --input-type=module --check < lib/audit.js              # ES modules
   ```
+- Run the logic regression tests (detection/providers/store/ignore/parity):
+  ```bash
+  node test/detection.test.mjs
+  ```
 - Load the extension and manually verify your change.
 - If you touched `manifest.json`, keep `description` ≤ 132 characters.
 - Fill out the PR checklist.

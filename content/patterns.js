@@ -83,12 +83,12 @@ var GAKS = (function () {
   }
 
   var PROVIDER_RES = [
-    { id: 'google', re: /AIza[0-9A-Za-z_\-]{35}/g },
-    { id: 'anthropic', re: /sk-ant-[A-Za-z0-9_-]{90,}/g },
-    { id: 'openrouter', re: /sk-or-(?:v1-)?[A-Za-z0-9]{40,}/g },
-    { id: 'xai', re: /xai-[A-Za-z0-9]{40,}/g },
-    { id: 'openai', re: /sk-(?:proj|svcacct|admin)-[A-Za-z0-9_-]{20,}|sk-[A-Za-z0-9]{40,}/g },
-    { id: 'twilio', re: /AC[0-9a-fA-F]{32}/g, secret: twilioSecret, context: /twilio|account[\s_-]?sid|auth[\s_-]?token/i }
+    { id: 'google', re: /(?<![A-Za-z0-9_-])AIza[0-9A-Za-z_-]{35}(?![A-Za-z0-9_-])/g },
+    { id: 'anthropic', re: /(?<![A-Za-z0-9])sk-ant-[A-Za-z0-9_-]{90,}/g },
+    { id: 'openrouter', re: /(?<![A-Za-z0-9])sk-or-(?:v1-)?[A-Za-z0-9]{40,}/g },
+    { id: 'xai', re: /(?<![A-Za-z0-9])xai-[A-Za-z0-9]{40,}/g },
+    { id: 'openai', re: /(?<![A-Za-z0-9])(?:sk-(?:proj|svcacct|admin)-[A-Za-z0-9_-]{20,}|sk-[A-Za-z0-9]{40,})/g },
+    { id: 'twilio', re: /(?<![A-Za-z0-9])AC[0-9a-fA-F]{32}(?![0-9a-fA-F])/g, secret: twilioSecret, context: /twilio|account[\s_-]?sid|auth[\s_-]?token/i }
   ];
 
   // Returns [{ key, provider, snippet, mapsContext }] for every key in `text`.

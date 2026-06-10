@@ -32,9 +32,12 @@ jobs:
       - name: Syntax-check JavaScript
         run: |
           for f in content/patterns.js content/content.js; do node --check "$f"; done
-          for f in background.js lib/*.js popup/popup.js dashboard/dashboard.js; do
+          for f in background.js lib/*.js popup/popup.js dashboard/dashboard.js collection/collection.js; do
             node --input-type=module --check < "$f"
           done
+
+      - name: Run logic regression tests
+        run: node test/detection.test.mjs
 
       - name: Build store zip
         run: bash build.sh
