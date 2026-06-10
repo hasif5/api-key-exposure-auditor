@@ -27,8 +27,27 @@ const fetchedScripts = new Set();
 const scriptQueue = [];
 let scriptActive = 0;
 
-// tabId -> Set of distinct keys seen on that tab (for the badge only).
+// tabId -> Set of distinct keys seen on that tab. Drives both the badge and the
+// popup's "keys on this page" list. Mirrored to storage.session so it survives
+// the service worker being suspended (the badge text persists on the tab even
+// when the worker sleeps, so the popup must be able to recover the same list).
+const TABKEYS_SESSION = 'gaks_tabkeys';
 const tabKeys = new Map();
+
+async function hydrateTabKeys() {
+  try {
+    const res = await chrome.storage.session.get(TABKEYS_SESSION);
+    const obj = res[TABKEYS_SESSION] || {};
+    for (const [tid, arr] of Object.entries(obj)) tabKeys.set(Number(tid), new Set(arr));
+  } catch (e) { /* session storage unavailable */ }
+}
+const ready = hydrateTabKeys();
+
+function persistTabKeys() {
+  const obj = {};
+  for (const [tid, set] of tabKeys) obj[tid] = Array.from(set);
+  chrome.storage.session.set({ [TABKEYS_SESSION]: obj }).catch(() => {});
+}
 
 function isMapsUrl(url) {
   const lower = (url || '').toLowerCase();
@@ -45,10 +64,20 @@ function updateBadge(tabId) {
 
 function noteKeyForTab(tabId, key) {
   if (tabId == null || tabId < 0) return;
-  let set = tabKeys.get(tabId);
-  if (!set) { set = new Set(); tabKeys.set(tabId, set); }
-  set.add(key);
-  updateBadge(tabId);
+  ready.then(() => {
+    let set = tabKeys.get(tabId);
+    if (!set) { set = new Set(); tabKeys.set(tabId, set); }
+    if (set.has(key)) return;
+    set.add(key);
+    updateBadge(tabId);
+    persistTabKeys();
+  });
+}
+
+function clearTabKeys(tabId) {
+  ready.then(() => {
+    if (tabKeys.delete(tabId)) { updateBadge(tabId); persistTabKeys(); }
+  });
 }
 
 // ---- Network observation ---------------------------------------------------
@@ -152,6 +181,14 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return true;
   }
 
+  if (msg.type === 'GAKS_GET_TAB_KEYS') {
+    ready.then(() => {
+      const set = tabKeys.get(msg.tabId);
+      sendResponse({ ok: true, keys: set ? Array.from(set) : [] });
+    });
+    return true;
+  }
+
   if (msg.type === 'GAKS_GET_DB') {
     getDb().then((db) => sendResponse({ ok: true, db })).catch(() => sendResponse({ ok: false }));
     return true;
@@ -248,11 +285,10 @@ function shortUrl(u) {
 chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
   // A new top-level navigation starts a fresh per-tab key set.
   if (changeInfo.status === 'loading' && changeInfo.url) {
-    tabKeys.delete(tabId);
-    updateBadge(tabId);
+    clearTabKeys(tabId);
   }
 });
 
 chrome.tabs.onRemoved.addListener((tabId) => {
-  tabKeys.delete(tabId);
+  clearTabKeys(tabId);
 });

@@ -233,6 +233,15 @@ function renderAudits(box, audits) {
   });
 }
 
+async function getTabKeys() {
+  if (!activeTab) return new Set();
+  try {
+    const resp = await chrome.runtime.sendMessage({ type: 'GAKS_GET_TAB_KEYS', tabId: activeTab.id });
+    if (resp && resp.ok) return new Set(resp.keys);
+  } catch (e) { /* worker waking up */ }
+  return new Set();
+}
+
 async function render() {
   const db = await getDb();
   const coll = await getCollection();
@@ -241,7 +250,13 @@ async function render() {
   try { origin = activeTab && activeTab.url ? new URL(activeTab.url).origin : ''; } catch (e) { origin = ''; }
   els.origin.textContent = origin || 'this page';
 
-  const items = db.findings.filter((f) => (f.origins || []).includes(origin));
+  // Show the keys actually associated with this tab (what the badge counts),
+  // which includes keys found in cross-origin frames / network / scripts.
+  // Fall back to an exact-origin match so nothing is missed if the tab-key
+  // map was lost (e.g. right after the worker restarted).
+  const tabKeySet = await getTabKeys();
+  const items = db.findings.filter((f) =>
+    tabKeySet.has(f.key) || (origin && (f.origins || []).includes(origin)));
   els.list.innerHTML = '';
   if (!items.length) {
     const p = document.createElement('p');

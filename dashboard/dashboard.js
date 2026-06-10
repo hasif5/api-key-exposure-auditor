@@ -252,12 +252,26 @@ function buildRow(f) {
     if (updated) {
       if (savedKeys.has(updated.key)) await saveToCollection(updated); // refresh saved snapshot
       status.textContent = '';
-      render();
+      // Update this row in place — no full re-render, so the table doesn't
+      // re-sort and the page doesn't jump/scroll to the top.
+      replaceRowInPlace(tr, updated);
     }
   });
   detailBtn.addEventListener('click', () => {
-    if (expanded.has(f.id)) expanded.delete(f.id); else expanded.add(f.id);
-    render();
+    // Toggle the detail row in place (no full re-render / scroll jump).
+    if (expanded.has(f.id)) {
+      expanded.delete(f.id);
+      const next = tr.nextElementSibling;
+      if (next && next.classList.contains('detail-row')) next.remove();
+      detailBtn.textContent = 'Details';
+    } else {
+      expanded.add(f.id);
+      const dr = document.createElement('tr');
+      dr.className = 'detail-row';
+      dr.appendChild(detailTable(f));
+      tr.after(dr);
+      detailBtn.textContent = 'Hide details';
+    }
   });
   delBtn.addEventListener('click', async () => {
     if (!window.confirm('Delete this finding and its audit history?')) return;
@@ -279,6 +293,27 @@ function buildRow(f) {
   tr.appendChild(sumTd);
   tr.appendChild(actTd);
   return tr;
+}
+
+// Swap a single row's DOM for a freshly built one, preserving table order,
+// scroll position, and any expanded detail row beneath it.
+function replaceRowInPlace(oldTr, finding) {
+  const idx = currentFindings.findIndex((x) => x.id === finding.id);
+  if (idx !== -1) currentFindings[idx] = finding;
+
+  const detailNode = (oldTr.nextElementSibling &&
+    oldTr.nextElementSibling.classList.contains('detail-row')) ? oldTr.nextElementSibling : null;
+
+  const newTr = buildRow(finding);
+  oldTr.replaceWith(newTr);
+
+  if (detailNode) {
+    const newDetail = document.createElement('tr');
+    newDetail.className = 'detail-row';
+    newDetail.appendChild(detailTable(finding));
+    detailNode.replaceWith(newDetail);
+  }
+  renderStats(currentFindings);
 }
 
 function renderStats(findings) {
@@ -313,6 +348,7 @@ const RISK_RANK = { critical: 0, high: 1, restricted: 2, unknown: 3 };
 let currentFindings = [];
 
 async function render() {
+  const scrollY = window.scrollY; // preserve position across rebuilds
   const db = await getDb();
   const coll = await getCollection();
   savedKeys = new Set(coll.items.map((i) => i.key));
@@ -342,6 +378,8 @@ async function render() {
       els.rows.appendChild(dr);
     }
   });
+
+  window.scrollTo(0, scrollY); // keep the user where they were
 }
 
 // ---- Toolbar actions -------------------------------------------------------
