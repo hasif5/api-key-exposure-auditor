@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # Quick installer (macOS / Linux) for the API Key Exposure Auditor.
 # Downloads the latest source into a folder, then tells you how to load it.
-# Usage:  curl -fsSL https://raw.githubusercontent.com/hasif5/google-api-key-exposure-auditor/main/install.sh | bash
+# Usage:  curl -fsSL https://raw.githubusercontent.com/hasif5/api-key-exposure-auditor/main/install.sh | bash
 #   or:   ./install.sh
 set -euo pipefail
 
-repo="hasif5/google-api-key-exposure-auditor"
-dest="$HOME/google-api-key-exposure-auditor"
+repo="hasif5/api-key-exposure-auditor"
+dest="$HOME/api-key-exposure-auditor"
 tmp="$(mktemp -d)"
 
 echo "Downloading latest source..."
@@ -14,7 +14,7 @@ curl -fsSL "https://github.com/$repo/archive/refs/heads/main.zip" -o "$tmp/src.z
 unzip -q "$tmp/src.zip" -d "$tmp"
 
 rm -rf "$dest"
-mv "$tmp/google-api-key-exposure-auditor-main" "$dest"
+mv "$tmp/api-key-exposure-auditor-main" "$dest"
 rm -rf "$tmp"
 
 cat <<EOF

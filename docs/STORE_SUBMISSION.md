@@ -19,7 +19,7 @@ icons, privacy policy). This guide is the copy-paste-and-upload checklist.
 .\build.ps1        # Windows
 ```
 
-This produces `dist/google-api-key-exposure-auditor-store.zip` containing only the
+This produces `dist/api-key-exposure-auditor-store.zip` containing only the
 runtime files (`manifest.json`, `background.js`, `content/`, `lib/`, `popup/`,
 `dashboard/`, `icons/`). Upload that zip.
 
@@ -39,14 +39,14 @@ Detects exposed Google, OpenAI & Anthropic API keys on web pages and audits thei
 
 **Detailed description**
 ```
-API Key Exposure Auditor is a security-research tool that detects exposed Google API keys (the AIza… format) in the pages you visit — in the page source, web storage, loaded JavaScript bundles, and network traffic — and, on demand, audits each key to determine which Google services it can reach, how it is restricted, and whether it can incur billing.
+API Key Exposure Auditor is a security-research tool that detects exposed API keys — Google (AIza…), OpenAI (sk-…), and Anthropic (sk-ant-…) — in the pages you visit, in the page source, web storage, loaded JavaScript bundles, and network traffic, and, on demand, audits each key to determine what it can reach, how it is restricted, and whether it can incur billing.
 
 DETECTION
 • Scans the DOM, inline scripts, attributes, localStorage/sessionStorage, resource-timing entries, external JavaScript bundles, and network traffic (key= params and the X-Goog-Api-Key header).
 • Logs each key once and records every origin, page, and source it was seen on.
 
 AUDIT (opt-in, authorized keys only)
-• Tests keys against Google Maps web services, the Maps JavaScript API loader, Routes API (New), Places API (New), Roads, Gemini, and Vertex AI.
+• Google keys: Maps web services, the Maps JavaScript API loader, Routes/Places (New), Roads, Gemini, Vertex AI, and other Cloud/Firebase APIs. OpenAI/Anthropic keys are validated against their APIs — bearer tokens with no restriction, so a valid one is unconditionally critical.
 • Flags unrestricted keys (reachable with no referrer/IP lock) and shows free-vs-billable cost awareness.
 
 PRIVACY
@@ -58,8 +58,8 @@ The active audit performs live Google API calls that may incur cost to the key o
 
 **Category:** Developer Tools
 **Language:** English
-**Homepage / support URL:** `https://github.com/hasif5/google-api-key-exposure-auditor`
-**Privacy policy URL:** `https://github.com/hasif5/google-api-key-exposure-auditor/blob/main/PRIVACY.md`
+**Homepage / support URL:** `https://github.com/hasif5/api-key-exposure-auditor`
+**Privacy policy URL:** `https://github.com/hasif5/api-key-exposure-auditor/blob/main/PRIVACY.md`
 
 ---
 
@@ -74,7 +74,7 @@ The active audit performs live Google API calls that may incur cost to the key o
 | **`tabs`** | To show per-tab results and the badge for the active tab. |
 | **`downloads`** | To let the user export findings as JSON/CSV files. |
 | **Remote code** | No. The extension executes no remotely-hosted code; it only *reads* page scripts as text to scan them. |
-| **Single purpose** | Detect and audit exposed Google API keys for authorized security research. |
+| **Single purpose** | Detect and audit exposed API keys (Google, OpenAI, Anthropic) for authorized security research. |
 
 **Data-use disclosures (Chrome "Privacy practices" tab):** check that the
 extension does **not** sell data, does **not** use data for unrelated purposes,
@@ -102,7 +102,7 @@ without exposing anyone else's credentials.
 
 ### Chrome Web Store
 1. Go to the [Developer Dashboard](https://chrome.google.com/webstore/devconsole/) and pay the one-time $5 fee if you haven't.
-2. **Add new item** → upload `dist/google-api-key-exposure-auditor-store.zip`.
+2. **Add new item** → upload `dist/api-key-exposure-auditor-store.zip`.
 3. Fill the listing from §2, permission justifications from §3, add screenshots from §4.
 4. Set the privacy policy URL, complete the data-use form, **Submit for review**.
 

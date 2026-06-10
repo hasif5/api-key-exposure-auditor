@@ -4,7 +4,7 @@
 
 Please report security issues **privately**, not in public issues:
 
-- Open a [private security advisory](https://github.com/hasif5/google-api-key-exposure-auditor/security/advisories/new), or
+- Open a [private security advisory](https://github.com/hasif5/api-key-exposure-auditor/security/advisories/new), or
 - Use the repository's **Security → Report a vulnerability** tab.
 
 Include reproduction steps and affected version. We aim to acknowledge reports

@@ -80,22 +80,22 @@ you prefer; all three end with the same one-time **Load unpacked** step.
 
 **Windows (PowerShell):**
 ```powershell
-iwr -useb https://raw.githubusercontent.com/hasif5/google-api-key-exposure-auditor/main/install.ps1 | iex
+iwr -useb https://raw.githubusercontent.com/hasif5/api-key-exposure-auditor/main/install.ps1 | iex
 ```
 **macOS / Linux:**
 ```bash
-curl -fsSL https://raw.githubusercontent.com/hasif5/google-api-key-exposure-auditor/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/hasif5/api-key-exposure-auditor/main/install.sh | bash
 ```
 The script drops the extension in your home folder and prints the load steps.
 
 ### Option 2 — download the zip (no terminal)
 
-1. Grab the latest `.zip` from the [**Releases**](https://github.com/hasif5/google-api-key-exposure-auditor/releases/latest) page and unzip it.
+1. Grab the latest `.zip` from the [**Releases**](https://github.com/hasif5/api-key-exposure-auditor/releases/latest) page and unzip it.
 
 ### Option 3 — clone (for developers)
 
 ```bash
-git clone https://github.com/hasif5/google-api-key-exposure-auditor.git
+git clone https://github.com/hasif5/api-key-exposure-auditor.git
 ```
 
 ### Then, in any case — load it (one time)

@@ -42,15 +42,15 @@ jobs:
       - name: Build source zip
         run: |
           git archive --format=zip \
-            --prefix=google-api-key-exposure-auditor/ \
-            -o "google-api-key-exposure-auditor-${GITHUB_REF_NAME}.zip" HEAD
+            --prefix=api-key-exposure-auditor/ \
+            -o "api-key-exposure-auditor-${GITHUB_REF_NAME}.zip" HEAD
 
       - name: Create / update release with assets
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          SRC="google-api-key-exposure-auditor-${GITHUB_REF_NAME}.zip"
-          STORE="dist/google-api-key-exposure-auditor-store.zip"
+          SRC="api-key-exposure-auditor-${GITHUB_REF_NAME}.zip"
+          STORE="dist/api-key-exposure-auditor-store.zip"
           if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
             gh release upload "$GITHUB_REF_NAME" "$STORE" "$SRC" --clobber
           else

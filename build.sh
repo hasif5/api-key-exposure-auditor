@@ -4,7 +4,7 @@
 set -euo pipefail
 
 out="dist"
-name="google-api-key-exposure-auditor-store.zip"
+name="api-key-exposure-auditor-store.zip"
 mkdir -p "$out"
 rm -f "$out/$name"
 

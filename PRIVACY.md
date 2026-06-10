@@ -63,4 +63,4 @@ follow responsible-disclosure practices for any exposed credential you find.
 ## Contact
 
 Questions or concerns: open an issue at
-<https://github.com/hasif5/google-api-key-exposure-auditor/issues>.
+<https://github.com/hasif5/api-key-exposure-auditor/issues>.

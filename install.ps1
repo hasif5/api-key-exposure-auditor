@@ -1,11 +1,11 @@
 # Quick installer (Windows / PowerShell) for the API Key Exposure Auditor.
 # Downloads the latest source into a folder, then tells you how to load it.
-# Usage:  iwr -useb https://raw.githubusercontent.com/hasif5/google-api-key-exposure-auditor/main/install.ps1 | iex
+# Usage:  iwr -useb https://raw.githubusercontent.com/hasif5/api-key-exposure-auditor/main/install.ps1 | iex
 #   or:   .\install.ps1
 
 $ErrorActionPreference = 'Stop'
-$repo = 'hasif5/google-api-key-exposure-auditor'
-$dest = Join-Path $HOME 'google-api-key-exposure-auditor'
+$repo = 'hasif5/api-key-exposure-auditor'
+$dest = Join-Path $HOME 'api-key-exposure-auditor'
 $zip  = Join-Path $env:TEMP 'gakea-src.zip'
 $tmp  = Join-Path $env:TEMP 'gakea-extract'
 
@@ -15,7 +15,7 @@ Invoke-WebRequest "https://github.com/$repo/archive/refs/heads/main.zip" -OutFil
 if (Test-Path $tmp)  { Remove-Item $tmp  -Recurse -Force }
 if (Test-Path $dest) { Remove-Item $dest -Recurse -Force }
 Expand-Archive $zip -DestinationPath $tmp -Force
-Move-Item (Join-Path $tmp 'google-api-key-exposure-auditor-main') $dest -Force
+Move-Item (Join-Path $tmp 'api-key-exposure-auditor-main') $dest -Force
 Remove-Item $zip -Force
 Remove-Item $tmp -Recurse -Force
 
