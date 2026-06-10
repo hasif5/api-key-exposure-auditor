@@ -86,11 +86,19 @@ tr.group-header td {
   background: #11161c; cursor: pointer; padding: 8px 10px;
   border-top: 2px solid var(--border); border-bottom: 1px solid var(--border);
   position: sticky; top: 64px; z-index: 1;
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
 }
+.gh-left { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .gh-toggle { color: var(--muted); display: inline-block; width: 14px; }
+.gh-seq {
+  color: var(--muted); font-size: 11px; font-weight: 700;
+  background: var(--panel2); border: 1px solid var(--border);
+  border-radius: 6px; padding: 1px 7px;
+}
 .gh-domain { font-weight: 700; color: var(--accent); }
-.gh-count { color: var(--muted); font-size: 11px; margin-left: 8px; }
-.gh-alert { color: #ff8a8a; font-size: 11px; font-weight: 700; margin-left: 8px; }
+.gh-count { color: var(--muted); font-size: 11px; }
+.gh-alert { color: #ff8a8a; font-size: 11px; font-weight: 700; }
+.gh-audit { white-space: nowrap; flex: 0 0 auto; }
 
 .stats { display: flex; gap: 14px; flex-wrap: wrap; padding: 12px 20px; }
 .stat.alert { border-color: #5a2d2d; background: #2a1414; }

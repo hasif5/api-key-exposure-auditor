@@ -369,10 +369,10 @@ async function render() {
       f.key.toLowerCase().includes(q) ||
       (f.origins || []).some((o) => o.toLowerCase().includes(q)));
   }
-  const byRisk = (a, b) =>
-    (RISK_RANK[assessRisk(a.audits).level] - RISK_RANK[assessRisk(b.audits).level]) ||
-    (b.mapsContext - a.mapsContext) ||
-    (new Date(b.lastSeen) - new Date(a.lastSeen));
+  // Stable "logged" order — by first-seen time. NEVER sorted by risk, so a row
+  // or its domain group never jumps when an audit starts/completes.
+  const loggedTs = (f) => new Date(f.firstSeen).getTime() || 0;
+  const byLogged = (a, b) => loggedTs(a) - loggedTs(b) || a.key.localeCompare(b.key);
 
   // Group findings by their primary domain.
   const groups = new Map();
@@ -382,15 +382,16 @@ async function render() {
     groups.get(d).push(f);
   });
   const groupArr = Array.from(groups.entries());
-  groupArr.forEach(([, arr]) => arr.sort(byRisk));
-  const worstRisk = (arr) => Math.min(...arr.map((f) => RISK_RANK[assessRisk(f.audits).level]));
-  groupArr.sort((a, b) => worstRisk(a[1]) - worstRisk(b[1]) || a[0].localeCompare(b[0]));
+  groupArr.forEach(([, arr]) => arr.sort(byLogged));
+  // Group order = when the domain was first logged (earliest first). Stable.
+  const firstLogged = (arr) => Math.min(...arr.map(loggedTs));
+  groupArr.sort((a, b) => firstLogged(a[1]) - firstLogged(b[1]) || a[0].localeCompare(b[0]));
 
   renderStats(currentFindings);
   els.rows.innerHTML = '';
   els.empty.style.display = items.length ? 'none' : 'block';
 
-  groupArr.forEach(([domain, arr]) => {
+  groupArr.forEach(([domain, arr], gi) => {
     const collapsed = collapsedGroups.has(domain);
     const unrestricted = arr.filter((f) => {
       const lv = assessRisk(f.audits).level; return lv === 'critical' || lv === 'high';
@@ -400,11 +401,26 @@ async function render() {
     hdr.className = 'group-header';
     const td = document.createElement('td');
     td.colSpan = 7;
-    td.innerHTML =
+
+    const left = document.createElement('div');
+    left.className = 'gh-left';
+    left.innerHTML =
       '<span class="gh-toggle">' + (collapsed ? '▶' : '▼') + '</span>' +
+      '<span class="gh-seq">#' + (gi + 1) + '</span>' +
       '<span class="gh-domain">' + esc(domain) + '</span>' +
       '<span class="gh-count">' + arr.length + ' key' + (arr.length > 1 ? 's' : '') + '</span>' +
       (unrestricted ? '<span class="gh-alert">⚠ ' + unrestricted + ' unrestricted</span>' : '');
+
+    const auditAllBtn = document.createElement('button');
+    auditAllBtn.className = 'btn small gh-audit';
+    auditAllBtn.textContent = 'Audit all in domain';
+    auditAllBtn.addEventListener('click', (e) => {
+      e.stopPropagation();           // don't toggle the accordion
+      auditGroup(arr.slice(), auditAllBtn);
+    });
+
+    td.appendChild(left);
+    td.appendChild(auditAllBtn);
     hdr.appendChild(td);
     hdr.addEventListener('click', () => {
       if (collapsed) collapsedGroups.delete(domain); else collapsedGroups.add(domain);
@@ -425,6 +441,30 @@ async function render() {
   });
 
   window.scrollTo(0, scrollY); // keep the user where they were
+}
+
+// Audit every key under one domain group (order/positions stay put).
+async function auditGroup(findings, btn) {
+  if (!findings.length) return;
+  if (!ensureConsent()) return;
+  const total = findings.length;
+  const label = btn.textContent;
+  btn.disabled = true;
+  let done = 0;
+  showProgressDeterminate(0, total, 'Auditing domain 0 / ' + total);
+  for (const f of findings) {
+    btn.textContent = 'Auditing ' + (done + 1) + '/' + total + '…';
+    showProgressDeterminate(done, total, 'Auditing ' + (done + 1) + ' / ' + total + '  (' + f.key.slice(0, 12) + '…)');
+    const updated = await runAudit(f.id, null);
+    if (updated && savedKeys.has(updated.key)) await saveToCollection(updated);
+    done++;
+    showProgressDeterminate(done, total, 'Audited ' + done + ' / ' + total);
+  }
+  hideProgress();
+  btn.disabled = false;
+  btn.textContent = label;
+  render();
+  toast('Audited ' + done + ' keys in this domain');
 }
 
 // ---- Toolbar actions -------------------------------------------------------
