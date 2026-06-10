@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Google API Key Exposure Auditor",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Detects exposed Google API keys on web pages and audits their restriction and billing exposure. Authorized security research only.",
   "homepage_url": "https://github.com/hasif5/google-api-key-exposure-auditor",
   "minimum_chrome_version": "102",
