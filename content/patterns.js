@@ -68,12 +68,27 @@ var GAKS = (function () {
 
   // Multi-provider detection patterns (mirror of lib/providers.js).
   // Order matters: Anthropic (sk-ant-) before OpenAI (generic sk-).
+  function twilioSecret(text, index, sid) {
+    var start = Math.max(0, index - 700);
+    var end = Math.min(text.length, index + 700);
+    var re = /[0-9a-fA-F]{32}/g;
+    var m;
+    var slice = text.slice(start, end);
+    while ((m = re.exec(slice)) !== null) {
+      var tok = m[0];
+      if (sid.indexOf(tok) !== -1) continue;
+      return tok;
+    }
+    return null;
+  }
+
   var PROVIDER_RES = [
     { id: 'google', re: /AIza[0-9A-Za-z_\-]{35}/g },
     { id: 'anthropic', re: /sk-ant-[A-Za-z0-9_-]{90,}/g },
     { id: 'openrouter', re: /sk-or-(?:v1-)?[A-Za-z0-9]{40,}/g },
     { id: 'xai', re: /xai-[A-Za-z0-9]{40,}/g },
-    { id: 'openai', re: /sk-(?:proj|svcacct|admin)-[A-Za-z0-9_-]{20,}|sk-[A-Za-z0-9]{40,}/g }
+    { id: 'openai', re: /sk-(?:proj|svcacct|admin)-[A-Za-z0-9_-]{20,}|sk-[A-Za-z0-9]{40,}/g },
+    { id: 'twilio', re: /AC[0-9a-fA-F]{32}/g, secret: twilioSecret }
   ];
 
   // Returns [{ key, provider, snippet, mapsContext }] for every key in `text`.
@@ -90,10 +105,13 @@ var GAKS = (function () {
         if (seen[key]) continue;
         seen[key] = true;
         var snippet = snippetAround(text, m.index, key.length);
+        var secret = prov.secret ? prov.secret(text, m.index, key) : null;
+        if (secret) snippet += ' · token: ' + secret;
         out.push({
           key: key,
           provider: prov.id,
           snippet: snippet,
+          secret: secret || undefined,
           mapsContext: prov.id === 'google' && isMapsContext(snippet)
         });
       }

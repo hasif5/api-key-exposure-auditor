@@ -68,6 +68,7 @@ body {
 .prov-anthropic { background: #3a2a16; color: #f0b878; border: 1px solid #6b4a22; }
 .prov-openrouter { background: #2a2147; color: #c2b6ff; border: 1px solid #463a78; }
 .prov-xai { background: #23262b; color: #cdd3db; border: 1px solid #3c424b; }
+.prov-twilio { background: #3a1518; color: #ff8088; border: 1px solid #6b2630; }
 .copy-btn, .icon-btn {
   background: var(--panel2); color: var(--txt); border: 1px solid var(--border);
   border-radius: 5px; padding: 3px 7px; font-size: 11px; cursor: pointer;

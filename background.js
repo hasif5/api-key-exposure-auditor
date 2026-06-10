@@ -217,6 +217,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       return upsertFinding({
         key: f.key,
         provider: f.provider || 'google',
+        secret: f.secret,
         origin,
         pageUrl: msg.pageUrl,
         source: f.source || 'dom',
@@ -248,7 +249,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     const key = msg.key;
     const providerId = msg.provider || providerForKey(key) || 'google';
     if (!key) { sendResponse({ ok: false, error: 'invalid key' }); return true; }
-    getProvider(providerId).audit(key, { includeGenerate: !!msg.includeGenerate })
+    getProvider(providerId).audit(key, { includeGenerate: !!msg.includeGenerate, secret: msg.secret })
       .then((audits) => sendResponse({ ok: true, audits }))
       .catch((e) => sendResponse({ ok: false, error: String(e && e.message || e) }));
     return true;
@@ -274,7 +275,7 @@ async function runAudit(findingId, includeGenerate) {
   const finding = await getFinding(findingId);
   if (!finding) throw new Error('finding not found: ' + findingId);
   const provider = getProvider(finding.provider || providerForKey(finding.key) || 'google');
-  const audits = await provider.audit(finding.key, { includeGenerate });
+  const audits = await provider.audit(finding.key, { includeGenerate, secret: finding.secret });
   return setAudits(findingId, audits);
 }
 
@@ -328,6 +329,7 @@ function recordHits(text, job, source, label) {
     upsertFinding({
       key: h.key,
       provider: h.provider || 'google',
+      secret: h.secret,
       origin: job.origin,
       pageUrl: job.pageUrl || job.url,
       source: source,

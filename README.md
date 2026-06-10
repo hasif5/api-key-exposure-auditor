@@ -26,7 +26,7 @@ IP / API enablement) can be assessed and reported.
 
 ## Features
 
-- **Multi-provider detection** — Google `AIza…`, OpenAI `sk-…` / `sk-proj-…`, Anthropic `sk-ant-…`, OpenRouter `sk-or-…`, and xAI `xai-…` keys, each tagged with a provider badge. Bearer-token keys (OpenAI/Anthropic/OpenRouter/xAI) are validated against each provider's API — a valid one is unconditionally **critical**.
+- **Multi-provider detection** — Google `AIza…`, OpenAI `sk-…` / `sk-proj-…`, Anthropic `sk-ant-…`, OpenRouter `sk-or-…`, xAI `xai-…`, and **Twilio** (`AC…` Account SID + Auth Token) keys, each tagged with a provider badge. Bearer-token keys are validated against each provider's API; Twilio's SID+token pair is validated via Basic Auth — a valid credential is unconditionally **critical**.
 - **Deep passive detection across every surface** a key can hide in:
   - Rendered DOM / inline scripts / element attributes, **plus open shadow-DOM** markup
   - **All linked assets** — JavaScript bundles, **CSS**, JSON/config, preloads, and web-app manifests are fetched and scanned

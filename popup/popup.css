@@ -88,6 +88,7 @@ body {
 .prov-anthropic { background: #3a2a16; color: #f0b878; border: 1px solid #6b4a22; }
 .prov-openrouter { background: #2a2147; color: #c2b6ff; border: 1px solid #463a78; }
 .prov-xai { background: #23262b; color: #cdd3db; border: 1px solid #3c424b; }
+.prov-twilio { background: #3a1518; color: #ff8088; border: 1px solid #6b2630; }
 .tags { display: flex; flex-wrap: wrap; gap: 4px; margin: 6px 0; }
 .tag {
   font-size: 10px;

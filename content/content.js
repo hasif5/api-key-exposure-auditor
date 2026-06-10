@@ -137,6 +137,7 @@
         return {
           key: r.key,
           provider: r.provider || 'google',
+          secret: r.secret,
           source: r.source,
           snippet: r.snippet,
           mapsContext: !!r.mapsContext
