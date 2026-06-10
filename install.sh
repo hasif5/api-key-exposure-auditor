@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Quick installer (macOS / Linux) for the Google API Key Exposure Auditor.
+# Quick installer (macOS / Linux) for the API Key Exposure Auditor.
 # Downloads the latest source into a folder, then tells you how to load it.
 # Usage:  curl -fsSL https://raw.githubusercontent.com/hasif5/google-api-key-exposure-auditor/main/install.sh | bash
 #   or:   ./install.sh

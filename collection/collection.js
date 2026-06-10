@@ -2,7 +2,16 @@ import {
   getCollection, removeFromCollection, setCollectionNote,
   setCollectionAudits, clearCollection, importCollection
 } from '../lib/store.js';
-import { assessRisk } from '../lib/audit.js';
+import { assessRisk } from '../lib/providers.js';
+
+const PROVIDER_LABELS = { google: 'Google', openai: 'OpenAI', anthropic: 'Anthropic' };
+function providerBadge(id) {
+  id = id || 'google';
+  const span = document.createElement('span');
+  span.className = 'prov-badge prov-' + id;
+  span.textContent = PROVIDER_LABELS[id] || id;
+  return span;
+}
 
 const els = {
   list: document.getElementById('list'),
@@ -37,7 +46,7 @@ function riskBadge(level) {
 }
 
 function buildCard(item) {
-  const risk = assessRisk(item.audits);
+  const risk = assessRisk(item.audits, item.provider);
   const card = document.createElement('div');
   card.className = 'card risk-' + risk.level;
 
@@ -60,6 +69,7 @@ function buildCard(item) {
   // Key + copy
   const keyRow = document.createElement('div');
   keyRow.className = 'row';
+  keyRow.appendChild(providerBadge(item.provider));
   const key = document.createElement('span');
   key.className = 'key';
   key.textContent = item.key;
@@ -159,7 +169,7 @@ async function render() {
       (i.origins || []).some((o) => o.toLowerCase().includes(q)));
   }
   items.sort((a, b) =>
-    (RISK_RANK[assessRisk(a.audits).level] - RISK_RANK[assessRisk(b.audits).level]) ||
+    (RISK_RANK[assessRisk(a.audits, a.provider).level] - RISK_RANK[assessRisk(b.audits, b.provider).level]) ||
     (new Date(b.savedAt) - new Date(a.savedAt)));
 
   els.list.innerHTML = '';

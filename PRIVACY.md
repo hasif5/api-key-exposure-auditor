@@ -1,4 +1,4 @@
-# Privacy Policy — Google API Key Exposure Auditor
+# Privacy Policy — API Key Exposure Auditor
 
 _Last updated: 2026-06-10_
 

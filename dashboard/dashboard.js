@@ -1,7 +1,7 @@
 import { getDb, importDb, clearAll, deleteFinding,
   getCollection, saveToCollection, removeFromCollection,
   getIgnoreDomains, setIgnoreDomains, purgeIgnored } from '../lib/store.js';
-import { assessRisk } from '../lib/audit.js';
+import { assessRisk } from '../lib/providers.js';
 
 let savedKeys = new Set();
 const collapsedGroups = new Set();
@@ -25,6 +25,15 @@ function hostOf(o) {
 }
 function groupDomainOf(f) {
   return (f.origins && f.origins.length) ? hostOf(f.origins[0]) : 'unknown';
+}
+
+const PROVIDER_LABELS = { google: 'Google', openai: 'OpenAI', anthropic: 'Anthropic' };
+function providerBadge(id) {
+  id = id || 'google';
+  const span = document.createElement('span');
+  span.className = 'prov-badge prov-' + id;
+  span.textContent = PROVIDER_LABELS[id] || id;
+  return span;
 }
 
 const els = {
@@ -168,7 +177,7 @@ async function runAudit(findingId, statusEl) {
 
 function buildRow(f) {
   const tr = document.createElement('tr');
-  const risk = assessRisk(f.audits);
+  const risk = assessRisk(f.audits, f.provider);
   if (risk.level === 'critical') tr.className = 'row-critical';
   else if (risk.level === 'high') tr.className = 'row-high';
 
@@ -193,6 +202,7 @@ function buildRow(f) {
   const keyTd = document.createElement('td');
   const keyWrap = document.createElement('div');
   keyWrap.className = 'key';
+  keyWrap.appendChild(providerBadge(f.provider));
   const code = document.createElement('span');
   code.textContent = f.key;
   const copy = document.createElement('button');
@@ -346,7 +356,7 @@ function renderStats(findings) {
   const audited = findings.filter((f) => f.audits && f.audits.length).length;
   let unrestricted = 0, billable = 0;
   findings.forEach((f) => {
-    const r = assessRisk(f.audits);
+    const r = assessRisk(f.audits, f.provider);
     if (r.level === 'critical' || r.level === 'high') unrestricted++;
     if (r.billableEnabled) billable++;
   });
@@ -413,7 +423,7 @@ async function render() {
     const c = { critical: 0, high: 0, restricted: 0, closed: 0, unaudited: 0 };
     arr.forEach((f) => {
       if (!f.audits || !f.audits.length) { c.unaudited++; return; }
-      const lv = assessRisk(f.audits).level;
+      const lv = assessRisk(f.audits, f.provider).level;
       if (lv === 'critical') c.critical++;
       else if (lv === 'high') c.high++;
       else if (lv === 'restricted') c.restricted++;
@@ -573,7 +583,7 @@ document.getElementById('csvBtn').addEventListener('click', async () => {
     'service', 'endpoint', 'httpStatus', 'apiStatus', 'classification', 'billable', 'costNote', 'detail', 'auditTs'];
   const rows = [cols];
   db.findings.forEach((f) => {
-    const risk = assessRisk(f.audits).level;
+    const risk = assessRisk(f.audits, f.provider).level;
     const base = [f.key, (f.origins || []).join(' '), (f.sources || []).join(' '), f.mapsContext,
       risk, f.firstSeen || '', f.lastSeen || ''];
     if (f.audits && f.audits.length) {

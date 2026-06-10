@@ -1,10 +1,13 @@
-# Google API Key Exposure Auditor
+# API Key Exposure Auditor
 
 A Chrome / Microsoft Edge (Manifest V3) browser extension that detects exposed
-**Google API keys** (`AIza…`) in the pages you visit — in the rendered DOM, web
-storage, loaded JavaScript bundles, and network traffic — and, on demand,
-**audits** each key to determine which Google services it can reach, how it is
-restricted, and whether it can incur billing.
+**API keys** — **Google** (`AIza…`), **OpenAI** (`sk-…`), and **Anthropic**
+(`sk-ant-…`) — in the pages you visit (rendered DOM, web storage, loaded
+JavaScript bundles, and network traffic), and, on demand, **audits** each key to
+determine what it can reach, how it is restricted, and whether it can incur
+billing. Google keys are tested across Maps/Places/Cloud/AI; OpenAI and Anthropic
+keys are validated against their APIs — and since those are bearer tokens with no
+restriction mechanism, any valid one is unconditionally **critical**.
 
 Built for **academic and authorized security-research** use: surfacing keys that
 are exposed in public page source so their restriction posture (HTTP-referrer /
@@ -23,6 +26,7 @@ IP / API enablement) can be assessed and reported.
 
 ## Features
 
+- **Multi-provider detection** — Google `AIza…`, OpenAI `sk-…` / `sk-proj-…`, and Anthropic `sk-ant-…` keys, each tagged with a provider badge.
 - **Passive detection across every surface** a key can hide in:
   - Rendered DOM / inline scripts / element attributes (`<script>`, `<iframe>`, `<img>`, `<link>`)
   - **External JavaScript bundles** — linked `.js` files are fetched and scanned (most leaked keys live in minified bundles, not inline HTML)
@@ -160,8 +164,9 @@ content/
   content.js            DOM / storage / resource scanner + script-URL forwarder
 lib/
   keys.js               shared detection helpers (module world)
+  providers.js          provider registry (Google/OpenAI/Anthropic): detect, audit, risk
   store.js              normalized, deduped findings DB (chrome.storage.local)
-  audit.js              Maps / Gemini / Vertex probes + risk assessment
+  audit.js              Google Maps / Places / Cloud / AI probes + risk assessment
 popup/                  current-tab UI
 dashboard/              all-findings UI, audit, JSON/CSV export-import
 collection/             saved-keys page (revisit, annotate, re-audit, export)

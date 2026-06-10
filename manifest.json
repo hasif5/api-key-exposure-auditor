@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Google API Key Exposure Auditor",
-  "version": "1.5.0",
-  "description": "Detects exposed Google API keys on web pages and audits their restriction and billing exposure. Authorized security research only.",
+  "name": "API Key Exposure Auditor",
+  "version": "1.6.0",
+  "description": "Detects exposed Google, OpenAI & Anthropic API keys on web pages and audits their access & billing exposure. Research use only.",
   "homepage_url": "https://github.com/hasif5/google-api-key-exposure-auditor",
   "minimum_chrome_version": "102",
   "permissions": [
@@ -29,7 +29,7 @@
   ],
   "action": {
     "default_popup": "popup/popup.html",
-    "default_title": "Google API Key Exposure Auditor",
+    "default_title": "API Key Exposure Auditor",
     "default_icon": {
       "16": "icons/icon16.png",
       "32": "icons/icon32.png",

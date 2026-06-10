@@ -10,8 +10,8 @@
 
 import { upsertFinding, setAudits, getFinding, getDb, migrate,
   getIgnoreDomains, purgeIgnored } from './lib/store.js';
-import { auditKey } from './lib/audit.js';
-import { findKeysInText, isMapsContext } from './lib/keys.js';
+import { isMapsContext } from './lib/keys.js';
+import { detectKeys, getProvider, providerForKey } from './lib/providers.js';
 import { urlHostIsIgnored } from './lib/ignore.js';
 
 // One-time cleanup: collapse any duplicates left by an earlier version.
@@ -112,6 +112,7 @@ chrome.webRequest.onBeforeRequest.addListener(
     const origin = details.initiator || url.origin;
     upsertFinding({
       key,
+      provider: 'google',
       origin,
       pageUrl: details.initiator || details.url,
       source: 'network',
@@ -141,6 +142,7 @@ chrome.webRequest.onBeforeSendHeaders.addListener(
       const origin = details.initiator || safeOrigin(details.url);
       upsertFinding({
         key,
+        provider: 'google',
         origin,
         pageUrl: details.initiator || details.url,
         source: 'network',
@@ -151,6 +153,36 @@ chrome.webRequest.onBeforeSendHeaders.addListener(
     }
   },
   { urls: ['*://*.googleapis.com/*'] },
+  ['requestHeaders']
+);
+
+// OpenAI / Anthropic keys travel in Authorization: Bearer / x-api-key headers.
+const BEARER_KEY_RE = /(sk-ant-[A-Za-z0-9_-]{90,}|sk-(?:proj|svcacct|admin)-[A-Za-z0-9_-]{20,}|sk-[A-Za-z0-9]{40,})/;
+chrome.webRequest.onBeforeSendHeaders.addListener(
+  (details) => {
+    if (pageIgnored(details.initiator)) return;
+    for (const h of details.requestHeaders || []) {
+      const name = (h.name || '').toLowerCase();
+      if (name !== 'authorization' && name !== 'x-api-key') continue;
+      const m = (h.value || '').match(BEARER_KEY_RE);
+      if (!m) continue;
+      const key = m[1];
+      const provider = providerForKey(key);
+      if (!provider) continue;
+      const origin = details.initiator || safeOrigin(details.url);
+      upsertFinding({
+        key,
+        provider,
+        origin,
+        pageUrl: details.initiator || details.url,
+        source: 'network',
+        snippet: details.url.split('?')[0] + ' — ' + (name === 'x-api-key' ? 'x-api-key' : 'Authorization') + ' header',
+        mapsContext: false
+      });
+      noteKeyForTab(details.tabId, key);
+    }
+  },
+  { urls: ['*://api.openai.com/*', '*://api.anthropic.com/*'] },
   ['requestHeaders']
 );
 
@@ -168,6 +200,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       noteKeyForTab(tabId, f.key);
       return upsertFinding({
         key: f.key,
+        provider: f.provider || 'google',
         origin,
         pageUrl: msg.pageUrl,
         source: f.source || 'dom',
@@ -196,8 +229,9 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
   if (msg.type === 'GAKS_AUDIT_RAW') {
     const key = msg.key;
-    if (!key || !KEY_RE.test(key)) { sendResponse({ ok: false, error: 'invalid key' }); return true; }
-    auditKey(key, { includeGenerate: !!msg.includeGenerate })
+    const providerId = msg.provider || providerForKey(key) || 'google';
+    if (!key) { sendResponse({ ok: false, error: 'invalid key' }); return true; }
+    getProvider(providerId).audit(key, { includeGenerate: !!msg.includeGenerate })
       .then((audits) => sendResponse({ ok: true, audits }))
       .catch((e) => sendResponse({ ok: false, error: String(e && e.message || e) }));
     return true;
@@ -222,7 +256,8 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 async function runAudit(findingId, includeGenerate) {
   const finding = await getFinding(findingId);
   if (!finding) throw new Error('finding not found: ' + findingId);
-  const audits = await auditKey(finding.key, { includeGenerate });
+  const provider = getProvider(finding.provider || providerForKey(finding.key) || 'google');
+  const audits = await provider.audit(finding.key, { includeGenerate });
   return setAudits(findingId, audits);
 }
 
@@ -279,16 +314,17 @@ async function scanScript(job) {
   if (!text) return;
   if (text.length > MAX_SCRIPT_BYTES) text = text.slice(0, MAX_SCRIPT_BYTES);
 
-  const hits = findKeysInText(text);
+  const hits = detectKeys(text);
   for (const h of hits) {
     noteKeyForTab(job.tabId, h.key);
     upsertFinding({
       key: h.key,
+      provider: h.provider || 'google',
       origin: job.origin,
       pageUrl: job.pageUrl || job.url,
       source: 'script',
       snippet: 'in ' + shortUrl(job.url) + ' — ' + h.snippet,
-      mapsContext: h.mapsContext || isMapsContext(job.url)
+      mapsContext: h.mapsContext || (h.provider === 'google' && isMapsContext(job.url))
     });
   }
 }

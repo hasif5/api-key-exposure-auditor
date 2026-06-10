@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for your interest in improving the **Google API Key Exposure Auditor**.
+Thanks for your interest in improving the **API Key Exposure Auditor**.
 
 ## Scope &amp; principles
 

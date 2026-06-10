@@ -1,4 +1,4 @@
-# Quick installer (Windows / PowerShell) for the Google API Key Exposure Auditor.
+# Quick installer (Windows / PowerShell) for the API Key Exposure Auditor.
 # Downloads the latest source into a folder, then tells you how to load it.
 # Usage:  iwr -useb https://raw.githubusercontent.com/hasif5/google-api-key-exposure-auditor/main/install.ps1 | iex
 #   or:   .\install.ps1

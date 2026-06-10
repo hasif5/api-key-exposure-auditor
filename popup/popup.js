@@ -1,5 +1,14 @@
 import { getDb, findingId, getCollection, saveToCollection, removeFromCollection } from '../lib/store.js';
-import { assessRisk } from '../lib/audit.js';
+import { assessRisk } from '../lib/providers.js';
+
+const PROVIDER_LABELS = { google: 'Google', openai: 'OpenAI', anthropic: 'Anthropic' };
+function providerBadge(id) {
+  id = id || 'google';
+  const span = document.createElement('span');
+  span.className = 'prov-badge prov-' + id;
+  span.textContent = PROVIDER_LABELS[id] || id;
+  return span;
+}
 
 let savedKeys = new Set();
 
@@ -66,6 +75,7 @@ function renderFinding(f) {
 
   const top = document.createElement('div');
   top.className = 'card-top';
+  top.appendChild(providerBadge(f.provider));
   const keyEl = document.createElement('span');
   keyEl.className = 'keyline';
   keyEl.textContent = f.key;
@@ -99,7 +109,7 @@ function renderFinding(f) {
 
   const riskBanner = document.createElement('div');
   riskBanner.className = 'risk-banner';
-  updateRiskBanner(riskBanner, f.audits);
+  updateRiskBanner(riskBanner, f.audits, f.provider);
   card.appendChild(riskBanner);
 
   if (f.snippet) {
@@ -166,7 +176,7 @@ function renderFinding(f) {
         f.audits = resp.finding.audits;
         auditsBox.classList.add('show');
         renderAudits(auditsBox, f.audits);
-        updateRiskBanner(riskBanner, f.audits);
+        updateRiskBanner(riskBanner, f.audits, f.provider);
         if (savedKeys.has(f.key)) saveToCollection(f); // refresh saved snapshot
         auditBtn.textContent = 'Re-audit key';
         status.textContent = '';
@@ -184,8 +194,8 @@ function renderFinding(f) {
   return card;
 }
 
-function updateRiskBanner(el, audits) {
-  const r = assessRisk(audits);
+function updateRiskBanner(el, audits, provider) {
+  const r = assessRisk(audits, provider);
   el.className = 'risk-banner';
   if (!audits || !audits.length) return;
   if (r.level === 'critical' || r.level === 'high' || r.level === 'restricted') {
@@ -267,7 +277,7 @@ async function render() {
     const rank = { critical: 0, high: 1, restricted: 2, unknown: 3 };
     items
       .sort((a, b) =>
-        (rank[assessRisk(a.audits).level] - rank[assessRisk(b.audits).level]) ||
+        (rank[assessRisk(a.audits, a.provider).level] - rank[assessRisk(b.audits, b.provider).level]) ||
         (b.mapsContext - a.mapsContext) || a.key.localeCompare(b.key))
       .forEach((f) => els.list.appendChild(renderFinding(f)));
   }

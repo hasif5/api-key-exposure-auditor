@@ -120,6 +120,7 @@
       findings: fresh.map(function (r) {
         return {
           key: r.key,
+          provider: r.provider || 'google',
           source: r.source,
           snippet: r.snippet,
           mapsContext: !!r.mapsContext

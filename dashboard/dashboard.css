@@ -131,8 +131,15 @@ tbody tr:hover { background: #191f25; }
 
 .key {
   font-family: ui-monospace, Consolas, monospace; font-size: 12px; word-break: break-all;
-  display: flex; align-items: center; gap: 6px;
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
 }
+.prov-badge {
+  font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 10px;
+  white-space: nowrap; font-family: -apple-system, "Segoe UI", sans-serif;
+}
+.prov-google { background: #18324f; color: #8ec5ff; border: 1px solid #2a5286; }
+.prov-openai { background: #0d3a32; color: #7fe7cd; border: 1px solid #1d6b5b; }
+.prov-anthropic { background: #3a2a16; color: #f0b878; border: 1px solid #6b4a22; }
 .copy-btn {
   background: var(--panel2); color: var(--txt); border: 1px solid var(--border);
   border-radius: 5px; padding: 2px 6px; font-size: 10px; cursor: pointer;

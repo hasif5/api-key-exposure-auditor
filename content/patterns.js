@@ -66,28 +66,35 @@ var GAKS = (function () {
     return (start > 0 ? '…' : '') + slice + (end < text.length ? '…' : '');
   }
 
-  // Returns an array of { key, snippet, mapsContext } for every key in `text`.
-  // `source` is just carried through for the caller's convenience.
+  // Multi-provider detection patterns (mirror of lib/providers.js).
+  // Order matters: Anthropic (sk-ant-) before OpenAI (generic sk-).
+  var PROVIDER_RES = [
+    { id: 'google', re: /AIza[0-9A-Za-z_\-]{35}/g },
+    { id: 'anthropic', re: /sk-ant-[A-Za-z0-9_-]{90,}/g },
+    { id: 'openai', re: /sk-(?:proj|svcacct|admin)-[A-Za-z0-9_-]{20,}|sk-[A-Za-z0-9]{40,}/g }
+  ];
+
+  // Returns [{ key, provider, snippet, mapsContext }] for every key in `text`.
   function findInText(text) {
     var out = [];
     if (!text) return out;
     var seen = Object.create(null);
-    KEY_RE.lastIndex = 0;
-    var m;
-    while ((m = KEY_RE.exec(text)) !== null) {
-      var key = m[0];
-      var snippet = snippetAround(text, m.index, key.length);
-      // De-dupe within this blob, but keep the first maps-context snippet.
-      if (seen[key]) {
-        if (!seen[key].mapsContext && isMapsContext(snippet)) {
-          seen[key].mapsContext = true;
-          seen[key].snippet = snippet;
-        }
-        continue;
+    for (var p = 0; p < PROVIDER_RES.length; p++) {
+      var prov = PROVIDER_RES[p];
+      prov.re.lastIndex = 0;
+      var m;
+      while ((m = prov.re.exec(text)) !== null) {
+        var key = m[0];
+        if (seen[key]) continue;
+        seen[key] = true;
+        var snippet = snippetAround(text, m.index, key.length);
+        out.push({
+          key: key,
+          provider: prov.id,
+          snippet: snippet,
+          mapsContext: prov.id === 'google' && isMapsContext(snippet)
+        });
       }
-      var rec = { key: key, snippet: snippet, mapsContext: isMapsContext(snippet) };
-      seen[key] = rec;
-      out.push(rec);
     }
     return out;
   }

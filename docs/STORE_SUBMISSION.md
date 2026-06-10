@@ -29,17 +29,17 @@ runtime files (`manifest.json`, `background.js`, `content/`, `lib/`, `popup/`,
 
 **Name**
 ```
-Google API Key Exposure Auditor
+API Key Exposure Auditor
 ```
 
 **Summary / short description** (≤132 chars)
 ```
-Detects exposed Google API keys on web pages and audits their restriction and billing exposure. Authorized security research only.
+Detects exposed Google, OpenAI & Anthropic API keys on web pages and audits their access & billing exposure. Research use only.
 ```
 
 **Detailed description**
 ```
-Google API Key Exposure Auditor is a security-research tool that detects exposed Google API keys (the AIza… format) in the pages you visit — in the page source, web storage, loaded JavaScript bundles, and network traffic — and, on demand, audits each key to determine which Google services it can reach, how it is restricted, and whether it can incur billing.
+API Key Exposure Auditor is a security-research tool that detects exposed Google API keys (the AIza… format) in the pages you visit — in the page source, web storage, loaded JavaScript bundles, and network traffic — and, on demand, audits each key to determine which Google services it can reach, how it is restricted, and whether it can incur billing.
 
 DETECTION
 • Scans the DOM, inline scripts, attributes, localStorage/sessionStorage, resource-timing entries, external JavaScript bundles, and network traffic (key= params and the X-Goog-Api-Key header).
