@@ -56,3 +56,6 @@ desktop.ini
 .cache/
 .tmp/
 tmp/
+
+# ---- Promotional drafts (never commit) ----
+docs/promo/
