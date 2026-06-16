@@ -114,7 +114,7 @@ function classLabel(c) { return c.replace(/-/g, ' '); }
 
 function auditSummary(audits) {
   const wrap = document.createElement('div');
-  wrap.className = 'audit-rows';
+  wrap.className = 'audit-summary';
   if (!audits || !audits.length) {
     const s = document.createElement('span');
     s.className = 'tag';
@@ -122,72 +122,102 @@ function auditSummary(audits) {
     wrap.appendChild(s);
     return wrap;
   }
+  const enabled = [], denied = [];
+  let billableCount = 0;
   audits.forEach((a) => {
-    const row = document.createElement('div');
-    row.className = 'audit-row';
-
-    const svc = document.createElement('span');
-    svc.className = 'audit-svc';
-    svc.textContent = a.service + ' · ' + a.endpoint;
-
-    const detail = document.createElement('span');
-    detail.className = 'audit-detail';
-    detail.textContent = (a.httpStatus ? 'HTTP ' + a.httpStatus + ' — ' : '') + (a.detail || a.apiStatus || '');
-
-    const pills = document.createElement('span');
-    pills.className = 'audit-pills';
-    const pill = document.createElement('span');
-    pill.className = 'pill ' + a.classification;
-    pill.textContent = classLabel(a.classification);
-    pill.title = CLASS_HELP[a.classification] || classLabel(a.classification);
-    pills.appendChild(pill);
-    if (a.billable) {
-      const bp = document.createElement('span');
-      bp.className = 'pill billable';
-      bp.textContent = '$';
-      bp.title = a.costNote || 'Billable';
-      bp.style.marginLeft = '3px';
-      pills.appendChild(bp);
-    }
-
-    row.appendChild(svc);
-    row.appendChild(detail);
-    row.appendChild(pills);
-    wrap.appendChild(row);
+    const cl = a.classification || 'unknown';
+    if (cl === 'enabled' || cl === 'over-quota') enabled.push(a);
+    else denied.push(a);
+    if (a.billable) billableCount++;
   });
+  if (enabled.length) {
+    const line = document.createElement('div');
+    line.className = 'audit-enabled';
+    enabled.forEach((a) => {
+      const p = document.createElement('span');
+      p.className = 'pill enabled';
+      p.textContent = '✓ ' + a.service;
+      line.appendChild(p);
+    });
+    wrap.appendChild(line);
+  }
+  if (denied.length) {
+    const groups = {};
+    denied.forEach((a) => {
+      const cl = a.classification || 'unknown';
+      if (!groups[cl]) groups[cl] = [];
+      groups[cl].push(a.service);
+    });
+    const line = document.createElement('div');
+    line.className = 'audit-denied';
+    Object.keys(groups).forEach((cl) => {
+      const p = document.createElement('span');
+      p.className = 'pill ' + cl;
+      p.textContent = classLabel(cl) + ' ×' + groups[cl].length;
+      p.title = groups[cl].join(', ');
+      line.appendChild(p);
+    });
+    wrap.appendChild(line);
+  }
+  if (billableCount) {
+    const bp = document.createElement('span');
+    bp.className = 'pill billable';
+    bp.textContent = '$ ×' + billableCount;
+    bp.title = billableCount + ' billable probe' + (billableCount > 1 ? 's' : '');
+    wrap.appendChild(bp);
+  }
   return wrap;
 }
 
 function detailTable(f) {
   const td = document.createElement('td');
-  td.colSpan = 7;
-  const tbl = document.createElement('table');
-  tbl.className = 'detail-table';
-  tbl.innerHTML =
-    '<thead><tr><th>Service</th><th>Endpoint</th><th>HTTP</th><th>API status</th>' +
-    '<th>Classification</th><th>Billing</th><th>Detail</th><th>When</th></tr></thead>';
-  const body = document.createElement('tbody');
-  (f.audits || []).forEach((a) => {
-    const billCell = a.billable
-      ? '<span class="pill billable">billable</span>'
-      : '<span class="pill enabled">free</span>';
-    const tr = document.createElement('tr');
-    tr.innerHTML =
-      '<td>' + esc(a.service) + '</td>' +
-      '<td>' + esc(a.endpoint) + '</td>' +
-      '<td class="mono">' + esc(String(a.httpStatus)) + '</td>' +
-      '<td class="mono">' + esc(a.apiStatus || '') + '</td>' +
-      '<td><span class="pill ' + a.classification + '">' + classLabel(a.classification) + '</span></td>' +
-      '<td>' + billCell + '<div class="seen">' + esc(a.costNote || '') + '</div></td>' +
-      '<td>' + esc(a.detail || '') + '</td>' +
-      '<td class="seen">' + esc(fmtTime(a.ts)) + '</td>';
-    body.appendChild(tr);
-  });
-  if (!(f.audits || []).length) {
-    body.innerHTML = '<tr><td colspan="8" class="seen">No audit has been run for this key.</td></tr>';
+  td.colSpan = 5;
+  const audits = f.audits || [];
+  if (!audits.length) {
+    td.innerHTML = '<div class="detail-empty">No audit has been run for this key.</div>';
+    return td;
   }
-  tbl.appendChild(body);
-  td.appendChild(tbl);
+  const groups = {};
+  audits.forEach((a) => {
+    const svc = a.service || 'Unknown';
+    if (!groups[svc]) groups[svc] = [];
+    groups[svc].push(a);
+  });
+  const order = ['enabled', 'over-quota', 'restricted-referer', 'restricted-ip',
+    'api-not-enabled', 'denied', 'invalid-key', 'error', 'inconclusive'];
+  const clsRank = (c) => { const i = order.indexOf(c); return i === -1 ? 99 : i; };
+  Object.keys(groups).forEach((svc) => {
+    const section = document.createElement('div');
+    section.className = 'detail-group';
+    const hd = document.createElement('div');
+    hd.className = 'detail-group-hd';
+    hd.textContent = svc;
+    section.appendChild(hd);
+    groups[svc].sort((a, b) => clsRank(a.classification) - clsRank(b.classification));
+    groups[svc].forEach((a) => {
+      const card = document.createElement('div');
+      card.className = 'detail-card detail-card-' + (a.classification || 'unknown');
+      const top = document.createElement('div');
+      top.className = 'dc-top';
+      top.innerHTML =
+        '<span class="dc-endpoint">' + esc(a.endpoint) + '</span>' +
+        '<span class="dc-http mono">HTTP ' + esc(String(a.httpStatus)) + '</span>' +
+        (a.apiStatus ? '<span class="dc-api mono">' + esc(a.apiStatus) + '</span>' : '') +
+        '<span class="pill ' + a.classification + '">' + classLabel(a.classification) + '</span>' +
+        (a.billable
+          ? '<span class="pill billable">$ ' + esc(a.costNote || 'billable') + '</span>'
+          : '<span class="dc-free">free</span>');
+      card.appendChild(top);
+      if (a.detail) {
+        const det = document.createElement('div');
+        det.className = 'dc-detail';
+        det.textContent = a.detail;
+        card.appendChild(det);
+      }
+      section.appendChild(card);
+    });
+    td.appendChild(section);
+  });
   return td;
 }
 
@@ -220,22 +250,17 @@ function buildRow(f) {
   if (risk.level === 'critical') tr.className = 'row-critical';
   else if (risk.level === 'high') tr.className = 'row-high';
 
-  // Risk cell (prominent flag for unrestricted keys)
+  // Risk cell — just the badge, tight
   const riskTd = document.createElement('td');
+  riskTd.className = 'risk-cell';
   const riskBadge = document.createElement('span');
   riskBadge.className = 'risk ' + risk.level;
   riskBadge.textContent = risk.level === 'critical' ? 'CRITICAL'
     : risk.level === 'high' ? 'UNRESTRICTED'
     : risk.level === 'restricted' ? 'RESTRICTED'
     : 'UNKNOWN';
+  riskBadge.title = risk.label;
   riskTd.appendChild(riskBadge);
-  const riskSub = document.createElement('span');
-  riskSub.className = 'risk-sub';
-  riskSub.textContent = risk.enabledServices.length
-    ? (risk.bypass ? 'referrer bypass · ' : '') + 'reachable: ' + risk.enabledServices.join(', ')
-    : risk.label;
-  if (risk.bypass) riskSub.title = risk.label;
-  riskTd.appendChild(riskSub);
 
   // Key cell
   const keyTd = document.createElement('td');
@@ -255,32 +280,22 @@ function buildRow(f) {
   keyWrap.appendChild(copy);
   keyTd.appendChild(keyWrap);
 
-  // Origins (a key can appear on several)
-  const origTd = document.createElement('td');
-  origTd.className = 'origin';
+  // Seen on — merged: origins, sources, maps context, timestamps
+  const seenTd = document.createElement('td');
+  seenTd.className = 'seen-cell';
   const origins = f.origins || [];
   const originHtml = origins.length
     ? origins.map((o) => esc(o)).join('<br>')
     : '<span class="no">unknown</span>';
-  origTd.innerHTML = originHtml +
-    (origins.length > 1 ? '<div class="seen">' + origins.length + ' origins</div>' : '') +
+  const srcHtml = (f.sources || []).map((s) =>
+    '<span class="tag src-' + s + '">' + esc(s) + '</span>').join(' ');
+  const mapsTag = f.mapsContext ? ' <span class="tag src-maps">maps</span>' : '';
+  seenTd.innerHTML = originHtml +
+    '<div class="seen-meta">' + srcHtml + mapsTag + '</div>' +
     '<div class="seen">first ' + esc(fmtTime(f.firstSeen)) + '</div>' +
     '<div class="seen">last ' + esc(fmtTime(f.lastSeen)) + '</div>';
 
-  // Sources
-  const srcTd = document.createElement('td');
-  (f.sources || []).forEach((s) => {
-    const t = document.createElement('span');
-    t.className = 'tag src-' + s;
-    t.textContent = s;
-    srcTd.appendChild(t);
-  });
-
-  // Maps context
-  const mapsTd = document.createElement('td');
-  mapsTd.innerHTML = f.mapsContext ? '<span class="yes">yes</span>' : '<span class="no">no</span>';
-
-  // Audit summary
+  // Audit results
   const sumTd = document.createElement('td');
   sumTd.appendChild(auditSummary(f.audits));
 
@@ -360,9 +375,7 @@ function buildRow(f) {
 
   tr.appendChild(riskTd);
   tr.appendChild(keyTd);
-  tr.appendChild(origTd);
-  tr.appendChild(srcTd);
-  tr.appendChild(mapsTd);
+  tr.appendChild(seenTd);
   tr.appendChild(sumTd);
   tr.appendChild(actTd);
   return tr;
@@ -479,7 +492,7 @@ async function render() {
     const hdr = document.createElement('tr');
     hdr.className = 'group-header';
     const td = document.createElement('td');
-    td.colSpan = 7;
+    td.colSpan = 5;
 
     const left = document.createElement('div');
     left.className = 'gh-left';
@@ -514,8 +527,11 @@ async function render() {
     });
     right.appendChild(auditAllBtn);
 
-    td.appendChild(left);
-    td.appendChild(right);
+    const bar = document.createElement('div');
+    bar.className = 'gh-bar';
+    bar.appendChild(left);
+    bar.appendChild(right);
+    td.appendChild(bar);
     hdr.appendChild(td);
     hdr.addEventListener('click', () => {
       if (collapsed) collapsedGroups.delete(domain); else collapsedGroups.add(domain);
