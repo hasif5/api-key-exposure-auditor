@@ -29,13 +29,21 @@
     return null;
   }
 
+  function awsSecret(text, index, id) {
+    var s = Math.max(0, index - 400), e = Math.min(text.length, index + 400);
+    var re = /(?<![A-Za-z0-9/+])[A-Za-z0-9/+]{40}(?![A-Za-z0-9/+])/g, m, slice = text.slice(s, e);
+    while ((m = re.exec(slice)) !== null) { if (id.indexOf(m[0]) === -1) return m[0]; }
+    return null;
+  }
+
   var PATTERNS = [
     { id: 'google',     re: /(?<![A-Za-z0-9_-])(?:AIza[0-9A-Za-z_-]{35}|AQ\.[A-Za-z0-9_-]{40,})(?![A-Za-z0-9_-])/g },
     { id: 'anthropic',  re: /(?<![A-Za-z0-9])sk-ant-[A-Za-z0-9_-]{90,}/g },
     { id: 'openrouter', re: /(?<![A-Za-z0-9])sk-or-(?:v1-)?[A-Za-z0-9]{40,}/g },
     { id: 'xai',        re: /(?<![A-Za-z0-9])xai-[A-Za-z0-9]{40,}/g },
     { id: 'openai',     re: /(?<![A-Za-z0-9])(?:sk-(?:proj|svcacct|admin)-[A-Za-z0-9_-]{20,}|sk-[A-Za-z0-9]{40,})/g },
-    { id: 'twilio',     re: /(?<![A-Za-z0-9])AC[0-9a-fA-F]{32}(?![0-9a-fA-F])/g, context: /twilio|account[\s_-]?sid|auth[\s_-]?token/i, secret: twilioSecret }
+    { id: 'twilio',     re: /(?<![A-Za-z0-9])AC[0-9a-fA-F]{32}(?![0-9a-fA-F])/g, context: /twilio|account[\s_-]?sid|auth[\s_-]?token/i, secret: twilioSecret },
+    { id: 'aws',        re: /(?<![A-Za-z0-9])(?:AKIA|ASIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ABIA|ACCA)[A-Z0-9]{16}(?![A-Za-z0-9])/g, secret: awsSecret }
   ];
 
   var MAPS_HINTS = ['maps.googleapis.com', 'maps.google.com', 'maps.gstatic.com',
@@ -51,7 +59,6 @@
   // ---- Generic "looks like a secret" heuristics (provider: 'unknown') ----
   // MUST be kept in sync with lib/providers.js and content/patterns.js.
   var GENERIC_TOKEN_PATTERNS = [
-    { label: 'AWS access key ID', re: /(?<![A-Za-z0-9])(?:AKIA|ASIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ABIA|ACCA)[A-Z0-9]{16}(?![A-Za-z0-9])/g },
     { label: 'GitHub token', re: /(?<![A-Za-z0-9])gh[pousr]_[A-Za-z0-9]{36,}(?![A-Za-z0-9])/g },
     { label: 'GitHub fine-grained PAT', re: /(?<![A-Za-z0-9])github_pat_[A-Za-z0-9_]{59,}(?![A-Za-z0-9])/g },
     { label: 'GitLab token', re: /(?<![A-Za-z0-9])glpat-[A-Za-z0-9_-]{20,}(?![A-Za-z0-9])/g },
@@ -88,7 +95,7 @@
   }
 
   function genericSnippet(text, index, len) {
-    var s = Math.max(0, index - 60), e = Math.min(text.length, index + len + 60);
+    var s = Math.max(0, index - 100), e = Math.min(text.length, index + len + 100);
     var out = text.slice(s, e).replace(/\s+/g, ' ').trim();
     if (s > 0) out = '…' + out;
     if (e < text.length) out += '…';
@@ -119,7 +126,7 @@
         if (s > 0) snippet = '…' + snippet;
         if (e < text.length) snippet += '…';
         var secret = pat.secret ? pat.secret(text, m.index, key) : null;
-        if (secret) snippet += ' · token: ' + secret;
+        if (secret) { snippet += ' · secret: ' + secret; reported[secret] = true; }
         var finding = {
           type: MSG_TYPE, key: key, provider: pat.id, source: source,
           snippet: snippet, secret: secret,

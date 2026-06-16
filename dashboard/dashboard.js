@@ -40,7 +40,7 @@ const CLASS_HELP = {
   'error': 'Network/transport error reaching the endpoint'
 };
 
-const PROVIDER_LABELS = { google: 'Google', openai: 'OpenAI', anthropic: 'Anthropic', openrouter: 'OpenRouter', xai: 'xAI', twilio: 'Twilio', unknown: 'Unknown' };
+const PROVIDER_LABELS = { google: 'Google', openai: 'OpenAI', anthropic: 'Anthropic', openrouter: 'OpenRouter', xai: 'xAI', twilio: 'Twilio', aws: 'AWS', unknown: 'Unknown' };
 function providerBadge(id) {
   id = id || 'google';
   const span = document.createElement('span');
@@ -441,12 +441,14 @@ async function render() {
   savedKeys = new Set(coll.items.map((i) => i.key));
   currentFindings = db.findings.slice();
   const q = (els.filter.value || '').toLowerCase().trim();
-  let items = currentFindings;
-  if (q) {
-    items = items.filter((f) =>
-      f.key.toLowerCase().includes(q) ||
-      (f.origins || []).some((o) => o.toLowerCase().includes(q)));
-  }
+  const matchesQuery = (f) => !q || f.key.toLowerCase().includes(q) ||
+    (f.origins || []).some((o) => o.toLowerCase().includes(q));
+  // Heuristic 'unknown' findings live in their own tab so they don't drown the
+  // real, auditable keys.
+  const known = currentFindings.filter((f) => f.provider !== 'unknown');
+  const unknown = currentFindings.filter((f) => f.provider === 'unknown');
+  renderUnknown(unknown, matchesQuery);
+  let items = known.filter(matchesQuery);
   // Stable "logged" order — by first-seen time. NEVER sorted by risk, so a row
   // or its domain group never jumps when an audit starts/completes.
   const loggedTs = (f) => new Date(f.firstSeen).getTime() || 0;
@@ -465,7 +467,7 @@ async function render() {
   const firstLogged = (arr) => Math.min(...arr.map(loggedTs));
   groupArr.sort((a, b) => firstLogged(a[1]) - firstLogged(b[1]) || a[0].localeCompare(b[0]));
 
-  renderStats(currentFindings);
+  renderStats(known);
   els.rows.innerHTML = '';
   els.empty.style.display = items.length ? 'none' : 'block';
 
@@ -554,6 +556,116 @@ async function render() {
   });
 
   window.scrollTo(0, scrollY); // keep the user where they were
+}
+
+// ---- Unknown / heuristic tab ----------------------------------------------
+
+const tabBtns = document.querySelectorAll('.tab-btn');
+const keysPanel = document.getElementById('keysPanel');
+const unknownPanel = document.getElementById('unknownPanel');
+const unknownList = document.getElementById('unknownList');
+const unknownEmpty = document.getElementById('unknownEmpty');
+const unknownStats = document.getElementById('unknownStats');
+const unknownCountEl = document.getElementById('unknownCount');
+
+tabBtns.forEach((btn) => {
+  btn.addEventListener('click', () => {
+    tabBtns.forEach((b) => b.classList.toggle('active', b === btn));
+    const tab = btn.dataset.tab;
+    keysPanel.hidden = tab !== 'keys';
+    unknownPanel.hidden = tab !== 'unknown';
+  });
+});
+
+// Strip a leading "reason — " (or "in foo.js — reason — ") prefix so we can show
+// the matched reason as a label and the code window as a reference separately.
+function splitReason(snippet) {
+  const s = String(snippet || '');
+  const i = s.indexOf(' — ');
+  if (i === -1) return { reason: '', ref: s };
+  return { reason: s.slice(0, i), ref: s.slice(i + 3) };
+}
+
+function buildUnknownCard(f) {
+  const { reason, ref } = splitReason(f.snippet);
+  const card = document.createElement('div');
+  card.className = 'uk-card';
+
+  const top = document.createElement('div');
+  top.className = 'uk-top';
+  top.appendChild(providerBadge('unknown'));
+
+  const keyEl = document.createElement('span');
+  keyEl.className = 'uk-key mono';
+  keyEl.textContent = f.key.length > 60 ? f.key.slice(0, 60) + '…' : f.key;
+  keyEl.title = f.key;
+  top.appendChild(keyEl);
+
+  const copyBtn = document.createElement('button');
+  copyBtn.className = 'btn ghost small';
+  copyBtn.textContent = 'copy';
+  copyBtn.addEventListener('click', () => {
+    navigator.clipboard.writeText(f.key);
+    copyBtn.textContent = 'copied';
+    setTimeout(() => (copyBtn.textContent = 'copy'), 1200);
+  });
+  top.appendChild(copyBtn);
+
+  (f.sources || []).forEach((s) => {
+    const t = document.createElement('span');
+    t.className = 'tag src-' + s;
+    t.textContent = s;
+    top.appendChild(t);
+  });
+
+  const delBtn = document.createElement('button');
+  delBtn.className = 'btn danger small uk-del';
+  delBtn.textContent = 'Delete';
+  delBtn.addEventListener('click', async () => {
+    await deleteFinding(f.id);
+    render();
+  });
+  top.appendChild(delBtn);
+  card.appendChild(top);
+
+  if (reason) {
+    const why = document.createElement('div');
+    why.className = 'uk-why';
+    why.textContent = reason;
+    card.appendChild(why);
+  }
+
+  const origins = (f.origins || []);
+  const meta = document.createElement('div');
+  meta.className = 'uk-meta';
+  meta.innerHTML =
+    '<span class="uk-origin">' + (origins.length ? origins.map(esc).join(', ') : '—') + '</span>' +
+    '<span class="uk-time">first ' + esc(fmtTime(f.firstSeen)) + ' · last ' + esc(fmtTime(f.lastSeen)) + '</span>';
+  card.appendChild(meta);
+
+  if (ref) {
+    const lbl = document.createElement('div');
+    lbl.className = 'uk-ref-label';
+    lbl.textContent = 'code reference';
+    card.appendChild(lbl);
+    const pre = document.createElement('pre');
+    pre.className = 'uk-ref';
+    pre.textContent = ref;
+    card.appendChild(pre);
+  }
+  return card;
+}
+
+function renderUnknown(unknown, matchesQuery) {
+  if (unknownCountEl) unknownCountEl.textContent = unknown.length ? String(unknown.length) : '';
+  if (!unknownList) return;
+  const items = unknown.filter(matchesQuery)
+    .sort((a, b) => (new Date(b.lastSeen) - new Date(a.lastSeen)) || a.key.localeCompare(b.key));
+  unknownStats.innerHTML = '<div class="stat"><div class="n">' + unknown.length +
+    '</div><div class="l">heuristic matches</div></div>';
+  unknownList.innerHTML = '';
+  unknownEmpty.style.display = items.length ? 'none' : 'block';
+  items.forEach((f) => unknownList.appendChild(buildUnknownCard(f)));
 }
 
 // How many keys to audit at once. Each key itself fans out to ~14 probes

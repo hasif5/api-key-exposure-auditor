@@ -65,6 +65,7 @@ The toolbar badge shows the number of distinct keys found on the active tab. Cli
 | **OpenRouter** | `sk-or-...` | Key info + optional chat completion |
 | **xAI** | `xai-...` | Models list + optional chat completion |
 | **Twilio** | `AC...` SID + 32-hex Auth Token | Account validation via Basic Auth |
+| **AWS** | `AKIA...`/`ASIA...` Access Key ID + 40-char Secret Access Key | Pair validated via SigV4 `sts:GetCallerIdentity` (free, read-only) |
 | **Unknown** (heuristic) | Other vendor token shapes (AWS, GitHub, GitLab, Slack, Stripe, SendGrid, npm, Shopify, Mailgun, JWT, private keys…) and high-entropy `secret`/`token`/`apiKey` assignments | Not auto-validated — flagged for manual review with where/how context |
 
 Bearer-token providers (OpenAI, Anthropic, OpenRouter, xAI) have no IP/referrer restriction mechanism -- any valid key is unconditionally **critical**. **Unknown** findings are heuristic "looks-like-a-secret" matches with no dedicated auditor; each records what pattern matched and which surface it came from.

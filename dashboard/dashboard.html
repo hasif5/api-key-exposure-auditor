@@ -23,6 +23,12 @@
     </div>
   </header>
 
+  <nav class="tab-nav">
+    <button class="tab-btn active" data-tab="keys">🔑 API Keys</button>
+    <button class="tab-btn" data-tab="unknown">❓ Unknown / heuristic <span id="unknownCount" class="tab-count"></span></button>
+  </nav>
+
+  <div id="keysPanel" class="tab-panel">
   <section class="warn">
     <strong>Self-project security only.</strong> The audit performs live requests to provider
     endpoints (Google, OpenAI, Anthropic, xAI, OpenRouter, Twilio) using each discovered key.
@@ -59,8 +65,8 @@
       </div>
       <div class="legend-col">
         <h4>Provider</h4>
-        <p><span class="prov-badge prov-google">Google</span> <span class="prov-badge prov-openai">OpenAI</span> <span class="prov-badge prov-anthropic">Anthropic</span> <span class="prov-badge prov-openrouter">OpenRouter</span> <span class="prov-badge prov-xai">xAI</span> <span class="prov-badge prov-twilio">Twilio</span></p>
-        <p class="legend-note">OpenAI/Anthropic/OpenRouter/xAI keys are bearer tokens — no restriction is possible, so a valid one is always CRITICAL. Twilio needs the Account SID + Auth Token together; the auditor captures the pair and validates it.</p>
+        <p><span class="prov-badge prov-google">Google</span> <span class="prov-badge prov-openai">OpenAI</span> <span class="prov-badge prov-anthropic">Anthropic</span> <span class="prov-badge prov-openrouter">OpenRouter</span> <span class="prov-badge prov-xai">xAI</span> <span class="prov-badge prov-twilio">Twilio</span> <span class="prov-badge prov-aws">AWS</span></p>
+        <p class="legend-note">OpenAI/Anthropic/OpenRouter/xAI keys are bearer tokens — no restriction is possible, so a valid one is always CRITICAL. Twilio (Account SID + Auth Token) and AWS (Access Key ID + Secret Access Key) are captured as a pair and validated together. Heuristic <span class="prov-badge prov-unknown">Unknown</span> matches live in their own tab.</p>
       </div>
     </div>
   </details>
@@ -94,6 +100,22 @@
     </table>
     <p class="empty" id="emptyMsg">No keys logged yet. Browse sites with the extension enabled, then return here.</p>
   </main>
+  </div><!-- /keysPanel -->
+
+  <div id="unknownPanel" class="tab-panel" hidden>
+    <section class="warn">
+      <strong>Heuristic matches.</strong> These look like credentials — known third-party token shapes,
+      or high-entropy values assigned to <code>secret</code>/<code>token</code>/<code>apiKey</code>-style
+      names — but aren't from a provider this tool can validate, so they're kept separate and
+      <strong>may include false positives</strong> (session IDs, CSRF tokens, hashes). Use the code
+      reference under each to judge whether it's a real secret.
+    </section>
+    <section class="stats" id="unknownStats"></section>
+    <main class="unknown-main">
+      <div id="unknownList"></div>
+      <p class="empty" id="unknownEmpty">No heuristic matches yet.</p>
+    </main>
+  </div><!-- /unknownPanel -->
 
   <div id="toast" class="toast"></div>
 

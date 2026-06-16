@@ -84,19 +84,32 @@ var GAKS = (function () {
     return null;
   }
 
+  // AWS Secret Access Key (40-char base64) found near the Access Key ID.
+  function awsSecret(text, index, id) {
+    var start = Math.max(0, index - 400);
+    var end = Math.min(text.length, index + 400);
+    var re = /(?<![A-Za-z0-9/+])[A-Za-z0-9/+]{40}(?![A-Za-z0-9/+])/g;
+    var m;
+    var slice = text.slice(start, end);
+    while ((m = re.exec(slice)) !== null) {
+      if (id.indexOf(m[0]) === -1) return m[0];
+    }
+    return null;
+  }
+
   var PROVIDER_RES = [
     { id: 'google', re: /(?<![A-Za-z0-9_-])(?:AIza[0-9A-Za-z_-]{35}|AQ\.[A-Za-z0-9_-]{40,})(?![A-Za-z0-9_-])/g },
     { id: 'anthropic', re: /(?<![A-Za-z0-9])sk-ant-[A-Za-z0-9_-]{90,}/g },
     { id: 'openrouter', re: /(?<![A-Za-z0-9])sk-or-(?:v1-)?[A-Za-z0-9]{40,}/g },
     { id: 'xai', re: /(?<![A-Za-z0-9])xai-[A-Za-z0-9]{40,}/g },
     { id: 'openai', re: /(?<![A-Za-z0-9])(?:sk-(?:proj|svcacct|admin)-[A-Za-z0-9_-]{20,}|sk-[A-Za-z0-9]{40,})/g },
-    { id: 'twilio', re: /(?<![A-Za-z0-9])AC[0-9a-fA-F]{32}(?![0-9a-fA-F])/g, secret: twilioSecret, context: /twilio|account[\s_-]?sid|auth[\s_-]?token/i }
+    { id: 'twilio', re: /(?<![A-Za-z0-9])AC[0-9a-fA-F]{32}(?![0-9a-fA-F])/g, secret: twilioSecret, context: /twilio|account[\s_-]?sid|auth[\s_-]?token/i },
+    { id: 'aws', re: /(?<![A-Za-z0-9])(?:AKIA|ASIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ABIA|ACCA)[A-Z0-9]{16}(?![A-Za-z0-9])/g, secret: awsSecret }
   ];
 
   // ---- Generic "looks like a secret" heuristics (provider: 'unknown') ------
   // MUST be kept in sync with lib/providers.js and content/intercept.js.
   var GENERIC_TOKEN_PATTERNS = [
-    { label: 'AWS access key ID', re: /(?<![A-Za-z0-9])(?:AKIA|ASIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ABIA|ACCA)[A-Z0-9]{16}(?![A-Za-z0-9])/g },
     { label: 'GitHub token', re: /(?<![A-Za-z0-9])gh[pousr]_[A-Za-z0-9]{36,}(?![A-Za-z0-9])/g },
     { label: 'GitHub fine-grained PAT', re: /(?<![A-Za-z0-9])github_pat_[A-Za-z0-9_]{59,}(?![A-Za-z0-9])/g },
     { label: 'GitLab token', re: /(?<![A-Za-z0-9])glpat-[A-Za-z0-9_-]{20,}(?![A-Za-z0-9])/g },
@@ -142,7 +155,7 @@ var GAKS = (function () {
         if (seen[key]) continue;
         seen[key] = true;
         out.push({ key: key, provider: 'unknown', reason: pat.label,
-          snippet: pat.label + ' — ' + snippetAround(text, m.index, key.length), mapsContext: false });
+          snippet: pat.label + ' — ' + snippetAround(text, m.index, key.length, 100), mapsContext: false });
       }
     }
     GENERIC_ASSIGN_RE.lastIndex = 0;
@@ -153,7 +166,7 @@ var GAKS = (function () {
       seen[val] = true;
       var idx = a.index + a[0].lastIndexOf(val);
       out.push({ key: val, provider: 'unknown', reason: 'secret-like value assigned to "' + kw + '"',
-        snippet: 'assigned to "' + kw + '" — ' + snippetAround(text, idx, val.length), mapsContext: false });
+        snippet: 'assigned to "' + kw + '" — ' + snippetAround(text, idx, val.length, 100), mapsContext: false });
     }
   }
 
@@ -176,7 +189,7 @@ var GAKS = (function () {
         seen[key] = true;
         var snippet = snippetAround(text, m.index, key.length);
         var secret = prov.secret ? prov.secret(text, m.index, key) : null;
-        if (secret) snippet += ' · token: ' + secret;
+        if (secret) { snippet += ' · secret: ' + secret; seen[secret] = true; }
         out.push({
           key: key,
           provider: prov.id,
