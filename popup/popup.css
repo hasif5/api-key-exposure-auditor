@@ -127,6 +127,16 @@ body {
   max-height: 54px;
   overflow: auto;
 }
+.secret-line {
+  font-size: 11px; color: #d9b98a; margin: 4px 0; display: flex; align-items: center;
+  gap: 6px; flex-wrap: wrap;
+}
+.src-links { display: flex; flex-direction: column; gap: 2px; margin: 4px 0; }
+.src-links a {
+  font-size: 10.5px; color: var(--accent); text-decoration: none; word-break: break-all;
+  font-family: ui-monospace, Consolas, monospace;
+}
+.src-links a:hover { text-decoration: underline; }
 
 .btn {
   background: var(--accent);

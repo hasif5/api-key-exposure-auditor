@@ -169,6 +169,24 @@ tbody tr:hover:not(.group-header):not(.detail-row) { background: #191f25; }
 .seen-cell { color: var(--muted); font-size: 11px; word-break: break-all; }
 .seen-meta { margin-top: 4px; display: flex; flex-wrap: wrap; gap: 3px; }
 .seen { color: var(--muted); font-size: 10.5px; }
+.seen-links { margin: 4px 0; display: flex; flex-direction: column; gap: 2px; }
+.seen-links a {
+  color: var(--accent); font-size: 11px; text-decoration: none; word-break: break-all;
+  font-family: ui-monospace, Consolas, monospace;
+}
+.seen-links a:hover { text-decoration: underline; }
+
+/* Paired secret + code-reference line under a key */
+.key-secret {
+  margin-top: 4px; font-size: 11px; color: #d9b98a;
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+}
+.key-secret .mono { font-family: ui-monospace, Consolas, monospace; word-break: break-all; }
+.key-ref {
+  margin-top: 4px; padding: 6px 8px; background: #11151a; border: 1px solid var(--border);
+  border-radius: 6px; font-family: ui-monospace, Consolas, monospace; font-size: 11px;
+  color: #aeb6c2; white-space: pre-wrap; word-break: break-all; max-height: 110px; overflow: auto;
+}
 
 .tag {
   display: inline-block; font-size: 10px; padding: 2px 6px; border-radius: 10px;

@@ -390,7 +390,9 @@ function recordHits(text, job, source, label) {
       provider: h.provider || 'google',
       secret: h.secret,
       origin: job.origin,
-      pageUrl: job.pageUrl || job.url,
+      // Store the exact resource URL (the script/map/config the key lives in)
+      // so the UI can link straight to it; the page domain is kept via `origin`.
+      pageUrl: job.url,
       source: source,
       snippet: 'in ' + shortUrl(job.url) + (label ? ' (' + label + ')' : '') + ' — ' + h.snippet,
       mapsContext: h.mapsContext || (h.provider === 'google' && isMapsContext(job.url))

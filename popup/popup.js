@@ -157,11 +157,49 @@ function renderFinding(f, collapsible) {
   updateRiskBanner(riskBanner, f.audits, f.provider);
   card.appendChild(riskBanner);
 
+  // Paired secret (AWS Secret Access Key / Twilio Auth Token), if captured.
+  if (f.secret) {
+    const sec = document.createElement('div');
+    sec.className = 'secret-line';
+    const sv = document.createElement('span');
+    sv.className = 'keyline';
+    sv.textContent = f.secret;
+    const sc = document.createElement('button');
+    sc.className = 'copy-btn';
+    sc.textContent = 'copy';
+    sc.addEventListener('click', () => {
+      navigator.clipboard.writeText(f.secret);
+      sc.textContent = 'copied';
+      setTimeout(() => (sc.textContent = 'copy'), 1200);
+    });
+    sec.appendChild(document.createTextNode('secret: '));
+    sec.appendChild(sv);
+    sec.appendChild(sc);
+    card.appendChild(sec);
+  }
+
   if (f.snippet) {
     const sn = document.createElement('div');
     sn.className = 'snippet';
     sn.textContent = f.snippet;
     card.appendChild(sn);
+  }
+
+  // Clickable links to the exact resource(s) the key was found in.
+  const srcUrls = (f.pageUrls || []).filter((u) => /^https?:\/\//.test(u));
+  if (srcUrls.length) {
+    const box = document.createElement('div');
+    box.className = 'src-links';
+    srcUrls.slice(0, 4).forEach((u) => {
+      const a = document.createElement('a');
+      a.href = u; a.target = '_blank'; a.rel = 'noopener noreferrer';
+      a.title = u;
+      let label = u;
+      try { const p = new URL(u); label = '↗ ' + p.host + '/…/' + (p.pathname.split('/').filter(Boolean).pop() || ''); } catch (e) { /* keep raw */ }
+      a.textContent = label;
+      box.appendChild(a);
+    });
+    card.appendChild(box);
   }
 
   // 'unknown' findings are heuristic matches with no provider endpoint to

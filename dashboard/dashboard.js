@@ -226,6 +226,34 @@ function esc(s) {
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+// Compact "host/…/file.js" label for a URL.
+function hostFile(u) {
+  try {
+    const p = new URL(u);
+    const file = p.pathname.split('/').filter(Boolean).pop() || p.pathname;
+    return p.host + '/…/' + file;
+  } catch (e) { return u.length > 60 ? u.slice(0, 60) + '…' : u; }
+}
+
+// Clickable links to the exact resource(s) a key was found in. Built via DOM
+// (not innerHTML) so URLs can't break out into markup.
+function sourceLinksEl(f) {
+  const urls = (f.pageUrls || []).filter((u) => /^https?:\/\//.test(u));
+  if (!urls.length) return null;
+  const box = document.createElement('div');
+  box.className = 'seen-links';
+  urls.slice(0, 6).forEach((u) => {
+    const a = document.createElement('a');
+    a.href = u;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.textContent = hostFile(u);
+    a.title = u;
+    box.appendChild(a);
+  });
+  return box;
+}
+
 async function runAudit(findingId, statusEl) {
   if (!ensureConsent()) return null;
   if (statusEl) statusEl.textContent = 'auditing…';
@@ -280,7 +308,32 @@ function buildRow(f) {
   keyWrap.appendChild(copy);
   keyTd.appendChild(keyWrap);
 
-  // Seen on — merged: origins, sources, maps context, timestamps
+  // Paired secret (Twilio Auth Token / AWS Secret Access Key), if captured.
+  if (f.secret) {
+    const sec = document.createElement('div');
+    sec.className = 'key-secret';
+    const sv = document.createElement('span');
+    sv.className = 'mono';
+    sv.textContent = f.secret;
+    const sc = document.createElement('button');
+    sc.className = 'copy-btn';
+    sc.textContent = 'copy';
+    sc.addEventListener('click', () => { navigator.clipboard.writeText(f.secret); toast('Secret copied'); });
+    sec.appendChild(document.createTextNode('secret '));
+    sec.appendChild(sv);
+    sec.appendChild(sc);
+    keyTd.appendChild(sec);
+  }
+
+  // Where it was found — snippet/code reference (consistent with the popup).
+  if (f.snippet) {
+    const ref = document.createElement('div');
+    ref.className = 'key-ref';
+    ref.textContent = f.snippet;
+    keyTd.appendChild(ref);
+  }
+
+  // Seen on — merged: origins, clickable source URLs, sources, timestamps
   const seenTd = document.createElement('td');
   seenTd.className = 'seen-cell';
   const origins = f.origins || [];
@@ -294,6 +347,8 @@ function buildRow(f) {
     '<div class="seen-meta">' + srcHtml + mapsTag + '</div>' +
     '<div class="seen">first ' + esc(fmtTime(f.firstSeen)) + '</div>' +
     '<div class="seen">last ' + esc(fmtTime(f.lastSeen)) + '</div>';
+  const links = sourceLinksEl(f);
+  if (links) seenTd.insertBefore(links, seenTd.querySelector('.seen-meta'));
 
   // Audit results
   const sumTd = document.createElement('td');
@@ -642,6 +697,9 @@ function buildUnknownCard(f) {
     '<span class="uk-origin">' + (origins.length ? origins.map(esc).join(', ') : '—') + '</span>' +
     '<span class="uk-time">first ' + esc(fmtTime(f.firstSeen)) + ' · last ' + esc(fmtTime(f.lastSeen)) + '</span>';
   card.appendChild(meta);
+
+  const links = sourceLinksEl(f);
+  if (links) card.appendChild(links);
 
   if (ref) {
     const lbl = document.createElement('div');
