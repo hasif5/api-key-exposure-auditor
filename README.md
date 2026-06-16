@@ -80,6 +80,10 @@ Detection runs across every surface a key can hide in:
 | **Recursive asset graph** | Referenced chunks, JSON, and CSS followed up to 3 levels deep (same-origin) |
 | **Common config paths** | `/.env`, `/config.json`, `/firebase-config.json`, plus exposed dumps (`/.git/config`, `/wp-config.php.bak`, `/actuator/env`, `/phpinfo.php`) probed once per origin |
 | **Web storage** | `localStorage` and `sessionStorage` |
+| **IndexedDB & Cache Storage** | The origin's IndexedDB object stores and Service Worker `caches` entries (bounded) |
+| **Runtime globals** | The page's own `window.*` properties (e.g. `window.ENV`, injected config) scanned in the MAIN world |
+| **`<template>` contents** | Inert template fragments that never appear in the serialized DOM |
+| **Page URL** | The current URL's query string and `#fragment` (catches OAuth-style tokens) |
 | **Network traffic** | Live interception of `fetch()`, `XMLHttpRequest`, `WebSocket`, `EventSource`, and `sendBeacon` request/response bodies, headers, and URLs |
 | **webRequest headers** | `key=` params, `X-Goog-Api-Key`, `Authorization: Bearer`, `x-api-key` |
 | **Response headers & cookies** | Top-level response header values and the origin's cookies are scanned for keys |

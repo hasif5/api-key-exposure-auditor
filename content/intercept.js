@@ -311,4 +311,56 @@
       };
     }
   } catch (ignore) {}
+
+  // ---- Scan the page's runtime globals -------------------------------------
+  // Config left on `window` (window.ENV, window.__APP_CONFIG__, firebase opts…)
+  // never reaches the serialized DOM, so the isolated-world content script can't
+  // see it. Object.keys(window) is just the page's own globals (plus id'd
+  // elements), not the WebIDL built-ins, so this stays cheap. Found keys ride
+  // the same postMessage bridge as network findings.
+  var MAX_GLOBAL = 512 * 1024; // cap serialized size per global object
+
+  // JSON.stringify with an early bail-out: throws once accumulated string
+  // content exceeds MAX_GLOBAL, so a giant in-memory store can't stall the page.
+  function boundedStringify(v) {
+    var n = 0;
+    return JSON.stringify(v, function (key, val) {
+      if (typeof val === 'string') {
+        n += val.length;
+        if (n > MAX_GLOBAL) throw 0;
+      }
+      return val;
+    });
+  }
+
+  function scanGlobals() {
+    try {
+      var keys = Object.keys(window);
+      var cap = Math.min(keys.length, 2000);
+      for (var i = 0; i < cap; i++) {
+        var k = keys[i], v;
+        try { v = window[k]; } catch (e) { continue; }
+        if (v == null) continue;
+        var t = typeof v;
+        if (t === 'string') {
+          if (v.length > 8) scanText(k + '=' + v, 'window-global', location.href);
+        } else if (t === 'object') {
+          if (v === window) continue;
+          if (typeof Node !== 'undefined' && v instanceof Node) continue;
+          if (typeof Window !== 'undefined' && v instanceof Window) continue;
+          var s;
+          try { s = boundedStringify(v); } catch (e) { continue; } // circular / too big / non-serializable
+          if (s && s.length > 8) scanText(k + '=' + s, 'window-global', location.href);
+        }
+      }
+    } catch (e) { /* ignore */ }
+  }
+
+  try {
+    // Guard on `document` so the headless test sandbox never schedules timers.
+    if (typeof document !== 'undefined') {
+      setTimeout(scanGlobals, 2500);
+      setTimeout(scanGlobals, 6000);
+    }
+  } catch (ignore) {}
 })();
