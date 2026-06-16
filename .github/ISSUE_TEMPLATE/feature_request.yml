@@ -5,9 +5,8 @@ body:
   - type: markdown
     attributes:
       value: |
-        Please keep proposals within the project's **authorized-use** scope —
-        detection and assessment of *exposed* keys for security research. Features
-        whose primary purpose is unauthorized exploitation will be declined.
+        Please keep proposals within the project's scope — helping developers
+        detect and fix API keys exposed in their own projects.
   - type: textarea
     id: problem
     attributes:
@@ -31,5 +30,5 @@ body:
     attributes:
       label: Scope
       options:
-        - label: This request is for defensive / authorized security-research use.
+        - label: This request helps developers secure their own projects.
           required: true

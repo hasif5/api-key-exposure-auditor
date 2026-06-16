@@ -147,7 +147,7 @@ function buildCard(item) {
   const status = document.createElement('span');
   status.className = 'spinner';
   auditBtn.addEventListener('click', async () => {
-    if (!window.confirm('Audit performs live Google API calls using this key and may incur cost to its owner. Only proceed for keys you are authorized to test. Continue?')) return;
+    if (!window.confirm('Audit performs live API calls using this key and may incur cost. Only proceed if this is your own key. Continue?')) return;
     auditBtn.disabled = true;
     status.textContent = 'auditing…';
     try {

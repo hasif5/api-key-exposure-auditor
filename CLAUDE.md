@@ -8,8 +8,8 @@ A vanilla Manifest V3 Chrome/Edge extension (**API Key Exposure Auditor**) that
 passively detects exposed API keys on visited pages and, on demand, actively
 audits each key's access/billing/restriction posture. **No build step, no
 bundler, no runtime npm dependencies** — the repo folder *is* the extension.
-Built for authorized security research; the active audit makes live requests to
-provider APIs and must only run against keys you're authorized to test.
+Built for self-project security — helping developers find and fix their own
+leaked keys. The active audit makes live requests to provider APIs.
 
 ## Commands
 

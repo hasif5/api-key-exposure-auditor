@@ -16,20 +16,14 @@ Please do **not** include real third-party API keys or credentials in your repor
 
 The latest released version receives fixes. Older versions are not maintained.
 
-## Responsible use &amp; disclosure of keys you find
+## Intended use
 
-This tool can reveal Google API keys that are exposed in public web pages. A few
-ground rules:
+This tool is designed to help developers find and fix API keys accidentally
+exposed in their own projects.
 
-- **Finding a key grants no right to use it.** Do not call APIs with a key you do
-  not own unless you are explicitly authorized to test it.
-- The active **audit** makes live requests that may incur cost to the key's owner.
-  Only run it against keys you own or are authorized to assess.
-- If you discover an exposed key that isn't yours, practice **responsible
-  disclosure**: notify the owner (or the site operator) privately so they can
-  rotate/restrict it, and do not publish the key.
-- Follow all applicable laws and the
-  [Google APIs Terms of Service](https://developers.google.com/terms).
+- The active **audit** makes live requests that may incur cost. Only audit keys
+  that belong to you or your organization.
+- Use it on your own sites, apps, and localhost deployments.
 
-This project is provided for educational and authorized security-research
-purposes only; the authors accept no liability for misuse.
+This project is provided for educational and self-project security purposes;
+the authors accept no liability for misuse.

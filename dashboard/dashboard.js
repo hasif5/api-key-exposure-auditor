@@ -97,9 +97,9 @@ function toast(msg) {
 function ensureConsent() {
   if (consented) return true;
   const ok = window.confirm(
-    'Active audit makes REAL API calls to Google (Maps, Gemini, Vertex AI) using the ' +
-    'selected key(s). These calls may incur cost to the key owner.\n\n' +
-    'Only proceed for keys you are authorized to test. Continue?'
+    'Active audit makes REAL API calls to provider endpoints using the ' +
+    'selected key(s). These calls may incur cost.\n\n' +
+    'Only proceed if these are your own keys. Continue?'
   );
   if (ok) consented = true;
   return ok;

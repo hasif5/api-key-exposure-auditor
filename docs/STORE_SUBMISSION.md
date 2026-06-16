@@ -52,8 +52,8 @@ AUDIT (opt-in, authorized keys only)
 PRIVACY
 • Runs entirely on your device. No backend, no analytics, no telemetry. Findings stay in local storage until you export or clear them.
 
-AUTHORIZED USE ONLY
-The active audit performs live Google API calls that may incur cost to the key owner. Use it only on keys you own or are explicitly authorized to test, and follow responsible-disclosure practices.
+SELF-PROJECT SECURITY
+The active audit performs live API calls that may incur cost. Use it only on keys that belong to you or your organization.
 ```
 
 **Category:** Developer Tools
