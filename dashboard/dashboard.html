@@ -11,7 +11,7 @@
     <div class="brand"><span class="logo">🔑</span><h1>API Key Exposure Auditor &mdash; Research Dashboard</h1></div>
     <div class="toolbar">
       <input type="search" id="filter" placeholder="Filter by key / origin…" />
-      <label class="chk" title="Adds billable generateContent calls (Gemini + Vertex) that consume tokens">
+      <label class="chk" title="Adds billable inference/generation calls that consume tokens (OpenAI, Anthropic, xAI, Gemini, Vertex)">
         <input type="checkbox" id="genChk" checked /> include billable generation probes
       </label>
       <button id="auditAllBtn" class="btn">Audit all</button>
@@ -24,9 +24,9 @@
   </header>
 
   <section class="warn">
-    <strong>Authorized research use only.</strong> The audit performs live requests to Google
-    (Maps, Gemini, Vertex AI) using each discovered key. These calls may incur cost to the key
-    owner — run them only against keys you are authorized to test.
+    <strong>Authorized research use only.</strong> The audit performs live requests to provider
+    endpoints (Google, OpenAI, Anthropic, xAI, OpenRouter, Twilio) using each discovered key.
+    These calls may incur cost to the key owner — run them only against keys you are authorized to test.
   </section>
 
   <details class="settings">

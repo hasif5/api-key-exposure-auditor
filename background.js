@@ -34,7 +34,7 @@ function pageIgnored(urlOrOrigin) {
   return urlHostIsIgnored(urlOrOrigin, userIgnore);
 }
 
-const KEY_RE = /^AIza[0-9A-Za-z_\-]{35}$/;
+const KEY_RE = /^(?:AIza[0-9A-Za-z_-]{35}|AQ\.[A-Za-z0-9_-]{40,})$/;
 const MAPS_HINTS = ['maps.googleapis.com', 'maps.google.com', 'maps.gstatic.com', '/maps/'];
 
 // Deep resource-scanning limits (keep it bounded but go deep).
@@ -152,7 +152,7 @@ chrome.webRequest.onBeforeRequest.addListener(
 
 // Modern Google APIs (Routes, Places New, etc.) pass the key in the
 // `X-Goog-Api-Key` request header rather than a `key=` query param.
-const KEY_IN_TEXT_RE = /AIza[0-9A-Za-z_\-]{35}/;
+const KEY_IN_TEXT_RE = /(?:AIza[0-9A-Za-z_-]{35}|AQ\.[A-Za-z0-9_-]{40,})/;
 chrome.webRequest.onBeforeSendHeaders.addListener(
   (details) => {
     if (pageIgnored(details.initiator)) return; // skip ignored visiting domains

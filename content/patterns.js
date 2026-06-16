@@ -6,9 +6,11 @@
  * content scripts that run in the same isolated world.
  */
 var GAKS = (function () {
-  // Google API keys: literal "AIza" followed by 35 chars from [A-Za-z0-9_-].
+  // Google API keys, two formats:
+  //   - legacy:  literal "AIza" + 35 chars from [A-Za-z0-9_-]
+  //   - newer:   literal "AQ." + 40+ base64url chars (e.g. AQ.Ab8RN6J…)
   // Global + multiline so we can iterate every occurrence in a blob.
-  var KEY_RE = /AIza[0-9A-Za-z_\-]{35}/g;
+  var KEY_RE = /(?:AIza[0-9A-Za-z_-]{35}|AQ\.[A-Za-z0-9_-]{40,})/g;
 
   // Substrings that mark a Google Maps usage context near a key.
   var MAPS_HINTS = [
@@ -23,7 +25,7 @@ var GAKS = (function () {
   ];
 
   // Single-key validity check (anchored), used to validate user/network input.
-  var SINGLE_KEY_RE = /^AIza[0-9A-Za-z_\-]{35}$/;
+  var SINGLE_KEY_RE = /^(?:AIza[0-9A-Za-z_-]{35}|AQ\.[A-Za-z0-9_-]{40,})$/;
 
   // Domains whose pages we skip entirely (mirror of lib/ignore.js).
   var GOOGLE_HOST_RE = /(^|\.)google\.[a-z]{2,}(\.[a-z]{2,})?$/;
@@ -83,7 +85,7 @@ var GAKS = (function () {
   }
 
   var PROVIDER_RES = [
-    { id: 'google', re: /(?<![A-Za-z0-9_-])AIza[0-9A-Za-z_-]{35}(?![A-Za-z0-9_-])/g },
+    { id: 'google', re: /(?<![A-Za-z0-9_-])(?:AIza[0-9A-Za-z_-]{35}|AQ\.[A-Za-z0-9_-]{40,})(?![A-Za-z0-9_-])/g },
     { id: 'anthropic', re: /(?<![A-Za-z0-9])sk-ant-[A-Za-z0-9_-]{90,}/g },
     { id: 'openrouter', re: /(?<![A-Za-z0-9])sk-or-(?:v1-)?[A-Za-z0-9]{40,}/g },
     { id: 'xai', re: /(?<![A-Za-z0-9])xai-[A-Za-z0-9]{40,}/g },

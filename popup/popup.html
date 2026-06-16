@@ -23,8 +23,8 @@
   </header>
 
   <section class="warn" id="warnBanner">
-    <p><strong>Authorized research use only.</strong> Auditing makes real API calls to Google
-      that may incur cost to the key owner. Only audit keys you are permitted to test.</p>
+    <p><strong>Authorized research use only.</strong> Auditing makes real API calls to provider
+      endpoints that may incur cost to the key owner. Only audit keys you are permitted to test.</p>
     <label class="ack">
       <input type="checkbox" id="ackChk" />
       I am authorized to audit the keys shown below.
@@ -32,14 +32,14 @@
   </section>
 
   <div class="opts">
-    <label title="Adds billable generateContent calls (Gemini + Vertex) that consume tokens">
+    <label title="Adds billable inference/generation calls that consume tokens (OpenAI, Anthropic, xAI, Gemini, Vertex)">
       <input type="checkbox" id="genChk" />
-      Include billable generation probes (Gemini + Vertex)
+      Include billable generation probes
     </label>
   </div>
 
   <main id="list" class="list">
-    <p class="empty" id="emptyMsg">No Google API keys detected on this page yet.</p>
+    <p class="empty" id="emptyMsg">No API keys detected on this page yet.</p>
   </main>
 
   <footer class="ftr">

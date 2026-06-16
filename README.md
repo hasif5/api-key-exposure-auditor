@@ -178,7 +178,7 @@ icons/                  extension icons
 
 ## Limitations
 
-- Detects keys in the Google `AIza…` format. Other credential types are out of scope.
+- Detects Google keys in both the legacy `AIza…` format and the newer `AQ.…` authorization-key format, alongside the other supported providers (OpenAI, Anthropic, OpenRouter, xAI, Twilio).
 - The audit reproduces server-side requests; it cannot replay a real browser's
   runtime referrer check, so a referrer-locked key used only via the Maps JS API
   may show as `inconclusive` rather than `restricted-referer`.

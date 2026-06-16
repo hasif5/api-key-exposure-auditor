@@ -1,10 +1,10 @@
 {
   "manifest_version": 3,
   "name": "API Key Exposure Auditor",
-  "version": "1.9.3",
+  "version": "1.10.0",
   "description": "Detects exposed Google, OpenAI & Anthropic API keys on web pages and audits their access & billing exposure. Research use only.",
   "homepage_url": "https://github.com/hasif5/api-key-exposure-auditor",
-  "minimum_chrome_version": "102",
+  "minimum_chrome_version": "111",
   "permissions": [
     "storage",
     "webRequest",
@@ -20,6 +20,13 @@
     "type": "module"
   },
   "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content/intercept.js"],
+      "run_at": "document_start",
+      "world": "MAIN",
+      "all_frames": true
+    },
     {
       "matches": ["<all_urls>"],
       "js": ["content/patterns.js", "content/content.js"],

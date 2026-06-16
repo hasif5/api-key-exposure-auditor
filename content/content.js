@@ -1,5 +1,5 @@
 /*
- * content.js — scans the rendered page for Google API keys.
+ * content.js — scans the rendered page for exposed API keys.
  *
  * Surfaces covered:
  *   - Full serialized DOM (inline scripts, attributes, iframe/img/link URLs).
@@ -162,6 +162,35 @@
   }
 
   function start() {
+    // Bridge network-interception findings from the MAIN-world interceptor.
+    window.addEventListener('message', function (ev) {
+      if (ev.source !== window) return;
+      if (!ev.data || ev.data.type !== '__GAKS_NET_FINDING__') return;
+      var d = ev.data;
+      var key = d.key;
+      if (!key) return;
+      var prev = reported[key];
+      if (prev && !(d.mapsContext && !prev.mapsContext)) return;
+      reported[key] = { source: 'network', snippet: d.snippet, mapsContext: !!d.mapsContext };
+      try {
+        chrome.runtime.sendMessage({
+          type: 'GAKS_FINDINGS',
+          pageUrl: pageUrl,
+          origin: origin,
+          findings: [{
+            key: key,
+            provider: d.provider || 'google',
+            secret: d.secret || undefined,
+            source: 'network',
+            snippet: '[' + (d.source || 'network') + '] ' + (d.snippet || key.slice(0, 10) + '…'),
+            mapsContext: !!d.mapsContext
+          }]
+        }, function () { void chrome.runtime.lastError; });
+      } catch (e) { /* context invalidated */ }
+    });
+    // Flush any findings the interceptor captured before we were ready.
+    try { window.postMessage({ type: '__GAKS_NET_FLUSH__' }, '*'); } catch (e) { /* ignore */ }
+
     // Initial scan once the page settles.
     scanAndReport();
 

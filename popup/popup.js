@@ -284,7 +284,7 @@ async function render() {
   if (!items.length) {
     const p = document.createElement('p');
     p.className = 'empty';
-    p.textContent = 'No Google API keys detected on this page yet.';
+    p.textContent = 'No API keys detected on this page yet.';
     els.list.appendChild(p);
   } else {
     const rank = { critical: 0, high: 1, restricted: 2, unknown: 3 };
