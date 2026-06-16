@@ -16,7 +16,7 @@ const CLASS_HELP = {
   'error': 'Network/transport error'
 };
 
-const PROVIDER_LABELS = { google: 'Google', openai: 'OpenAI', anthropic: 'Anthropic', openrouter: 'OpenRouter', xai: 'xAI', twilio: 'Twilio' };
+const PROVIDER_LABELS = { google: 'Google', openai: 'OpenAI', anthropic: 'Anthropic', openrouter: 'OpenRouter', xai: 'xAI', twilio: 'Twilio', unknown: 'Unknown' };
 function providerBadge(id) {
   id = id || 'google';
   const span = document.createElement('span');
@@ -165,7 +165,14 @@ function buildCard(item) {
       auditBtn.disabled = false;
     }
   });
-  actions.appendChild(auditBtn);
+  if (item.provider === 'unknown') {
+    const note = document.createElement('span');
+    note.className = 'hint';
+    note.textContent = 'Heuristic match — cannot be auto-validated.';
+    actions.appendChild(note);
+  } else {
+    actions.appendChild(auditBtn);
+  }
   actions.appendChild(status);
   card.appendChild(actions);
 

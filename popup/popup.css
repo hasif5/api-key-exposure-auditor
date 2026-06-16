@@ -100,6 +100,8 @@ body {
 .prov-openrouter { background: #2a2147; color: #c2b6ff; border: 1px solid #463a78; }
 .prov-xai { background: #23262b; color: #cdd3db; border: 1px solid #3c424b; }
 .prov-twilio { background: #3a1518; color: #ff8088; border: 1px solid #6b2630; }
+.prov-unknown { background: #2b2b2b; color: #c9b08a; border: 1px solid #4d4636; }
+.unknown-note { font-size: 11px; color: var(--muted); margin: 4px 0 2px; line-height: 1.4; }
 .tags { display: flex; flex-wrap: wrap; gap: 4px; margin: 6px 0; }
 .tag {
   font-size: 10px;

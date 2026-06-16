@@ -40,7 +40,7 @@ const CLASS_HELP = {
   'error': 'Network/transport error reaching the endpoint'
 };
 
-const PROVIDER_LABELS = { google: 'Google', openai: 'OpenAI', anthropic: 'Anthropic', openrouter: 'OpenRouter', xai: 'xAI', twilio: 'Twilio' };
+const PROVIDER_LABELS = { google: 'Google', openai: 'OpenAI', anthropic: 'Anthropic', openrouter: 'OpenRouter', xai: 'xAI', twilio: 'Twilio', unknown: 'Unknown' };
 function providerBadge(id) {
   id = id || 'google';
   const span = document.createElement('span');
@@ -367,7 +367,8 @@ function buildRow(f) {
     render();
   });
 
-  actTd.appendChild(auditBtn);
+  // 'unknown' findings are heuristic matches with no endpoint to validate.
+  if (f.provider !== 'unknown') actTd.appendChild(auditBtn);
   actTd.appendChild(saveBtn);
   actTd.appendChild(detailBtn);
   actTd.appendChild(delBtn);
@@ -563,6 +564,8 @@ const KEY_AUDIT_CONCURRENCY = 4;
 // Run audits over a list of findings with bounded concurrency, updating progress
 // as each completes. Returns the number audited.
 async function auditMany(findings, onProgress) {
+  // Skip heuristic 'unknown' findings — there's no provider endpoint for them.
+  findings = findings.filter((f) => f.provider !== 'unknown');
   const total = findings.length;
   let done = 0;
   let idx = 0;

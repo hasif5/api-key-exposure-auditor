@@ -13,7 +13,7 @@ const CLASS_HELP = {
   'error': 'Network/transport error'
 };
 
-const PROVIDER_LABELS = { google: 'Google', openai: 'OpenAI', anthropic: 'Anthropic', openrouter: 'OpenRouter', xai: 'xAI', twilio: 'Twilio' };
+const PROVIDER_LABELS = { google: 'Google', openai: 'OpenAI', anthropic: 'Anthropic', openrouter: 'OpenRouter', xai: 'xAI', twilio: 'Twilio', unknown: 'Unknown' };
 function providerBadge(id) {
   id = id || 'google';
   const span = document.createElement('span');
@@ -164,12 +164,22 @@ function renderFinding(f, collapsible) {
     card.appendChild(sn);
   }
 
-  const auditBtn = document.createElement('button');
-  auditBtn.className = 'btn small audit-btn';
-  auditBtn.dataset.id = f.id;
-  auditBtn.textContent = f.audits && f.audits.length ? 'Re-audit key' : 'Audit key';
-  auditBtn.disabled = !els.ack.checked;
-  card.appendChild(auditBtn);
+  // 'unknown' findings are heuristic matches with no provider endpoint to
+  // validate against — show a note instead of an audit button.
+  let auditBtn = null;
+  if (f.provider === 'unknown') {
+    const note = document.createElement('div');
+    note.className = 'unknown-note';
+    note.textContent = 'Heuristic match — unrecognized credential type; can\'t be auto-validated.';
+    card.appendChild(note);
+  } else {
+    auditBtn = document.createElement('button');
+    auditBtn.className = 'btn small audit-btn';
+    auditBtn.dataset.id = f.id;
+    auditBtn.textContent = f.audits && f.audits.length ? 'Re-audit key' : 'Audit key';
+    auditBtn.disabled = !els.ack.checked;
+    card.appendChild(auditBtn);
+  }
 
   const saveBtn = document.createElement('button');
   saveBtn.className = 'save-btn';
@@ -207,7 +217,7 @@ function renderFinding(f, collapsible) {
   renderAudits(auditsBox, f.audits || []);
   card.appendChild(auditsBox);
 
-  auditBtn.addEventListener('click', async () => {
+  if (auditBtn) auditBtn.addEventListener('click', async () => {
     auditing.add(f.id);
     auditBtn.disabled = true;
     status.textContent = 'auditing…';

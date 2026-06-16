@@ -93,6 +93,70 @@ var GAKS = (function () {
     { id: 'twilio', re: /(?<![A-Za-z0-9])AC[0-9a-fA-F]{32}(?![0-9a-fA-F])/g, secret: twilioSecret, context: /twilio|account[\s_-]?sid|auth[\s_-]?token/i }
   ];
 
+  // ---- Generic "looks like a secret" heuristics (provider: 'unknown') ------
+  // MUST be kept in sync with lib/providers.js and content/intercept.js.
+  var GENERIC_TOKEN_PATTERNS = [
+    { label: 'AWS access key ID', re: /(?<![A-Za-z0-9])(?:AKIA|ASIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ABIA|ACCA)[A-Z0-9]{16}(?![A-Za-z0-9])/g },
+    { label: 'GitHub token', re: /(?<![A-Za-z0-9])gh[pousr]_[A-Za-z0-9]{36,}(?![A-Za-z0-9])/g },
+    { label: 'GitHub fine-grained PAT', re: /(?<![A-Za-z0-9])github_pat_[A-Za-z0-9_]{59,}(?![A-Za-z0-9])/g },
+    { label: 'GitLab token', re: /(?<![A-Za-z0-9])glpat-[A-Za-z0-9_-]{20,}(?![A-Za-z0-9])/g },
+    { label: 'Slack token', re: /(?<![A-Za-z0-9])xox[baprs]-[A-Za-z0-9-]{10,}(?![A-Za-z0-9])/g },
+    { label: 'Slack webhook URL', re: /https:\/\/hooks\.slack\.com\/services\/[A-Za-z0-9_/]+/g },
+    { label: 'Stripe secret key', re: /(?<![A-Za-z0-9])(?:sk|rk)_(?:live|test)_[A-Za-z0-9]{16,}(?![A-Za-z0-9])/g },
+    { label: 'SendGrid API key', re: /(?<![A-Za-z0-9])SG\.[A-Za-z0-9_-]{16,}\.[A-Za-z0-9_-]{16,}(?![A-Za-z0-9])/g },
+    { label: 'Google OAuth client secret', re: /(?<![A-Za-z0-9])GOCSPX-[A-Za-z0-9_-]{20,}(?![A-Za-z0-9])/g },
+    { label: 'npm access token', re: /(?<![A-Za-z0-9])npm_[A-Za-z0-9]{36}(?![A-Za-z0-9])/g },
+    { label: 'Shopify access token', re: /(?<![A-Za-z0-9])shp(?:at|ca|pa|ss)_[a-fA-F0-9]{32}(?![A-Za-z0-9])/g },
+    { label: 'Twilio API key SID', re: /(?<![A-Za-z0-9])SK[0-9a-f]{32}(?![0-9a-f])/g },
+    { label: 'Mailgun API key', re: /(?<![A-Za-z0-9])key-[0-9a-f]{32}(?![A-Za-z0-9])/g },
+    { label: 'JSON Web Token (JWT)', re: /(?<![A-Za-z0-9_-])eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}(?![A-Za-z0-9_-])/g },
+    { label: 'Private key block', re: /-----BEGIN (?:RSA |EC |DSA |OPENSSH |PGP )?PRIVATE KEY-----/g }
+  ];
+  var GENERIC_ASSIGN_RE = /(?<![A-Za-z0-9_])(api[_-]?key|apikey|secret[_-]?key|secret|access[_-]?token|auth[_-]?token|client[_-]?secret|private[_-]?key|access[_-]?key|password|passwd|token)["']?\s*[:=]\s*["']([^"'\s]{16,200})["']/gi;
+  var GENERIC_PLACEHOLDER_RE = /your|example|placeholder|change[_-]?me|redacted|dummy|sample|xxxx|todo|insert|enter|^[A-Za-z]+$|<|\{|\$/i;
+  var GENERIC_CHARSET_RE = /^[A-Za-z0-9_\-+/.=~]+$/;
+
+  function genericEntropy(s) {
+    var freq = Object.create(null), i;
+    for (i = 0; i < s.length; i++) freq[s[i]] = (freq[s[i]] || 0) + 1;
+    var e = 0;
+    for (var k in freq) { var p = freq[k] / s.length; e -= p * Math.log(p) / Math.LN2; }
+    return e;
+  }
+
+  function looksSecret(v) {
+    if (!v || v.length < 16 || v.length > 200) return false;
+    if (!GENERIC_CHARSET_RE.test(v)) return false;
+    if (GENERIC_PLACEHOLDER_RE.test(v)) return false;
+    if (!/[A-Za-z]/.test(v) || !/[0-9]/.test(v)) return false;
+    return genericEntropy(v) >= 3.0;
+  }
+
+  function detectGeneric(text, seen, out) {
+    for (var i = 0; i < GENERIC_TOKEN_PATTERNS.length; i++) {
+      var pat = GENERIC_TOKEN_PATTERNS[i];
+      pat.re.lastIndex = 0;
+      var m;
+      while ((m = pat.re.exec(text)) !== null) {
+        var key = m[0];
+        if (seen[key]) continue;
+        seen[key] = true;
+        out.push({ key: key, provider: 'unknown', reason: pat.label,
+          snippet: pat.label + ' — ' + snippetAround(text, m.index, key.length), mapsContext: false });
+      }
+    }
+    GENERIC_ASSIGN_RE.lastIndex = 0;
+    var a;
+    while ((a = GENERIC_ASSIGN_RE.exec(text)) !== null) {
+      var kw = a[1], val = a[2];
+      if (seen[val] || !looksSecret(val)) continue;
+      seen[val] = true;
+      var idx = a.index + a[0].lastIndexOf(val);
+      out.push({ key: val, provider: 'unknown', reason: 'secret-like value assigned to "' + kw + '"',
+        snippet: 'assigned to "' + kw + '" — ' + snippetAround(text, idx, val.length), mapsContext: false });
+    }
+  }
+
   // Returns [{ key, provider, snippet, mapsContext }] for every key in `text`.
   function findInText(text) {
     var out = [];
@@ -122,6 +186,7 @@ var GAKS = (function () {
         });
       }
     }
+    detectGeneric(text, seen, out);
     return out;
   }
 
