@@ -1,5 +1,6 @@
 import { getDb, findingId, getCollection, saveToCollection, removeFromCollection } from '../lib/store.js';
 import { assessRisk } from '../lib/providers.js';
+import { getSiteSecurityDb, siteSeveritySummary } from '../lib/site-audit.js';
 
 const CLASS_HELP = {
   'enabled': 'Reachable with NO Referer — works from anywhere (exploitable)',
@@ -36,6 +37,7 @@ const els = {
 
 let activeTab = null;
 let auditing = new Set();
+const popupExpanded = new Set();
 
 function openDashboard() {
   chrome.tabs.create({ url: chrome.runtime.getURL('dashboard/dashboard.html') });
@@ -81,28 +83,60 @@ function classLabel(c) {
   return c.replace(/-/g, ' ');
 }
 
-function renderFinding(f) {
+function renderFinding(f, collapsible) {
+  const collapsed = collapsible && !popupExpanded.has(f.id);
   const card = document.createElement('div');
-  card.className = 'card';
+  card.className = 'card' + (collapsed ? ' collapsed' : '');
 
+  // -- Header row (always visible) --
   const top = document.createElement('div');
   top.className = 'card-top';
   top.appendChild(providerBadge(f.provider));
   const keyEl = document.createElement('span');
   keyEl.className = 'keyline';
-  keyEl.textContent = f.key;
-  const copyBtn = document.createElement('button');
-  copyBtn.className = 'copy-btn';
-  copyBtn.textContent = 'copy';
-  copyBtn.addEventListener('click', () => {
-    navigator.clipboard.writeText(f.key);
-    copyBtn.textContent = 'copied';
-    setTimeout(() => (copyBtn.textContent = 'copy'), 1200);
-  });
+  keyEl.textContent = collapsed ? f.key.slice(0, 18) + '…' : f.key;
+  if (collapsed) keyEl.title = f.key;
   top.appendChild(keyEl);
-  top.appendChild(copyBtn);
+
+  if (collapsible) {
+    const r = assessRisk(f.audits, f.provider);
+    const riskTag = document.createElement('span');
+    riskTag.className = 'risk-pill ' + r.level;
+    riskTag.textContent = r.level === 'critical' ? 'CRITICAL'
+      : r.level === 'high' ? 'UNRESTRICTED'
+      : r.level === 'restricted' ? 'RESTRICTED'
+      : f.audits && f.audits.length ? 'UNKNOWN' : 'not audited';
+    top.appendChild(riskTag);
+
+    const arrow = document.createElement('span');
+    arrow.className = 'card-toggle';
+    arrow.textContent = collapsed ? '▸' : '▾';
+    top.appendChild(arrow);
+
+    top.style.cursor = 'pointer';
+    top.addEventListener('click', (e) => {
+      if (e.target.closest('.copy-btn')) return;
+      if (collapsed) popupExpanded.add(f.id); else popupExpanded.delete(f.id);
+      render();
+    });
+  }
+
+  if (!collapsed) {
+    const copyBtn = document.createElement('button');
+    copyBtn.className = 'copy-btn';
+    copyBtn.textContent = 'copy';
+    copyBtn.addEventListener('click', () => {
+      navigator.clipboard.writeText(f.key);
+      copyBtn.textContent = 'copied';
+      setTimeout(() => (copyBtn.textContent = 'copy'), 1200);
+    });
+    top.appendChild(copyBtn);
+  }
   card.appendChild(top);
 
+  if (collapsed) return card;
+
+  // -- Expanded body --
   const tags = document.createElement('div');
   tags.className = 'tags';
   if (f.mapsContext) {
@@ -189,7 +223,7 @@ function renderFinding(f) {
         auditsBox.classList.add('show');
         renderAudits(auditsBox, f.audits);
         updateRiskBanner(riskBanner, f.audits, f.provider);
-        if (savedKeys.has(f.key)) saveToCollection(f); // refresh saved snapshot
+        if (savedKeys.has(f.key)) saveToCollection(f);
         auditBtn.textContent = 'Re-audit key';
         status.textContent = '';
       } else {
@@ -288,21 +322,64 @@ async function render() {
     els.list.appendChild(p);
   } else {
     const rank = { critical: 0, high: 1, restricted: 2, unknown: 3 };
+    const collapsible = items.length > 1;
     items
       .sort((a, b) =>
         (rank[assessRisk(a.audits, a.provider).level] - rank[assessRisk(b.audits, b.provider).level]) ||
         (b.mapsContext - a.mapsContext) || a.key.localeCompare(b.key))
-      .forEach((f) => els.list.appendChild(renderFinding(f)));
+      .forEach((f) => els.list.appendChild(renderFinding(f, collapsible)));
   }
   els.count.textContent = items.length + (items.length === 1 ? ' key' : ' keys');
+}
+
+async function renderSecuritySummary() {
+  const secSection = document.getElementById('secSection');
+  const secSummary = document.getElementById('secSummary');
+  if (!secSection || !secSummary) return;
+
+  let origin = '';
+  try { origin = activeTab && activeTab.url ? new URL(activeTab.url).origin : ''; } catch (e) { /* */ }
+  if (!origin) { secSection.hidden = true; return; }
+
+  try {
+    const db = await getSiteSecurityDb();
+    const site = db[origin];
+    if (!site || !site.issues || !site.issues.length) {
+      secSection.hidden = true;
+      return;
+    }
+    secSection.hidden = false;
+    const sm = siteSeveritySummary(site.issues);
+    secSummary.innerHTML = '';
+    const pills = [];
+    if (sm.critical) pills.push('<span class="sec-pill critical">' + sm.critical + ' critical</span>');
+    if (sm.high) pills.push('<span class="sec-pill high">' + sm.high + ' high</span>');
+    if (sm.medium) pills.push('<span class="sec-pill medium">' + sm.medium + ' medium</span>');
+    if (sm.low) pills.push('<span class="sec-pill low">' + sm.low + ' low</span>');
+    if (sm.info) pills.push('<span class="sec-pill info">' + sm.info + ' info</span>');
+    if (!pills.length) {
+      secSummary.innerHTML = '<span class="sec-ok">No issues found</span>';
+    } else {
+      secSummary.innerHTML = pills.join('') +
+        '<button class="sec-link" id="secDashLink">View details →</button>';
+      const link = document.getElementById('secDashLink');
+      if (link) link.addEventListener('click', () => {
+        chrome.tabs.create({ url: chrome.runtime.getURL('dashboard/dashboard.html') });
+      });
+    }
+  } catch (e) {
+    secSection.hidden = true;
+  }
 }
 
 async function init() {
   const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
   activeTab = tabs[0] || null;
   await render();
+  await renderSecuritySummary();
   // Findings can arrive shortly after the popup opens (async scans).
   setTimeout(render, 1200);
+  setTimeout(renderSecuritySummary, 1500);
 }
 
 init();
