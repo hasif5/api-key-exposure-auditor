@@ -17,6 +17,9 @@
   var MSG_TYPE = '__GAKS_NET_FINDING__';
   var FLUSH_TYPE = '__GAKS_NET_FLUSH__';
   var MAX_BODY = 2 * 1024 * 1024;
+  var LOG = '[GAKS-NET] ';
+
+  console.log(LOG + 'interceptor loaded on', location.href);
 
   // ---- Detection patterns (mirror of patterns.js / providers.js) ----
   function twilioSecret(text, index, sid) {
@@ -75,6 +78,7 @@
           snippet: snippet, secret: secret,
           mapsContext: pat.id === 'google' && hasMapsCtx(snippet + ' ' + (url || ''))
         };
+        console.log(LOG + 'FOUND key [' + pat.id + '] via ' + source, key.slice(0, 14) + '…', url || '');
         try { window.postMessage(finding, '*'); } catch (ignore) {}
         queue.push(finding);
       }
@@ -127,6 +131,7 @@
     window.fetch = function () {
       var args = arguments, url = '', init;
       try {
+        console.log(LOG + 'fetch intercepted:', String(args[0] && args[0].url ? args[0].url : args[0] || '').slice(0, 120));
         var isReq = typeof Request !== 'undefined' && args[0] instanceof Request;
         if (isReq) {
           url = args[0].url;
@@ -151,6 +156,7 @@
           if (/^(image|video|audio|font)\b/.test(ct) || /wasm|octet-stream/.test(ct)) return;
           res.clone().text().then(function (t) {
             if (t && t.length < MAX_BODY) {
+              console.log(LOG + 'fetch response scanned:', (res.url || url).slice(0, 120), '(' + t.length + ' bytes)');
               try { scanText(t, 'network-response', res.url || url); } catch (ignore) {}
             }
           }).catch(function () {});
@@ -169,6 +175,7 @@
     XMLHttpRequest.prototype.open = function (method, u) {
       this.__gaks_url = String(u || '');
       this.__gaks_hdr = '';
+      console.log(LOG + 'XHR intercepted:', method, String(u || '').slice(0, 120));
       try { scanText(this.__gaks_url, 'network-request', this.__gaks_url); } catch (ignore) {}
       return _open.apply(this, arguments);
     };
@@ -189,7 +196,10 @@
         try {
           var ct = (xhr.getResponseHeader('content-type') || '').toLowerCase();
           if (/^(image|video|audio|font)\b/.test(ct) || /wasm|octet-stream/.test(ct)) return;
-          if (xhr.responseText) scanText(xhr.responseText, 'network-response', xhr.__gaks_url);
+          if (xhr.responseText) {
+            console.log(LOG + 'XHR response scanned:', (xhr.__gaks_url || '').slice(0, 120), '(' + xhr.responseText.length + ' bytes)');
+            scanText(xhr.responseText, 'network-response', xhr.__gaks_url);
+          }
         } catch (ignore) {}
       });
       return _send.apply(this, arguments);
@@ -201,6 +211,7 @@
     var _WS = window.WebSocket;
     if (_WS) {
       window.WebSocket = function (u, protocols) {
+        console.log(LOG + 'WebSocket intercepted:', String(u || '').slice(0, 120));
         try { scanText(String(u || ''), 'websocket', String(u || '')); } catch (ignore) {}
         var ws = arguments.length > 1 ? new _WS(u, protocols) : new _WS(u);
         var _wsSend = ws.send.bind(ws);
@@ -226,6 +237,7 @@
     var _ES = window.EventSource;
     if (_ES) {
       window.EventSource = function (u, init) {
+        console.log(LOG + 'EventSource intercepted:', String(u || '').slice(0, 120));
         try { scanText(String(u || ''), 'eventsource', String(u || '')); } catch (ignore) {}
         var es = arguments.length > 1 ? new _ES(u, init) : new _ES(u);
         es.addEventListener('message', function (ev) {
@@ -245,6 +257,7 @@
     var _beacon = navigator.sendBeacon;
     if (_beacon) {
       navigator.sendBeacon = function (u, data) {
+        console.log(LOG + 'sendBeacon intercepted:', String(u || '').slice(0, 120));
         try {
           scanText(String(u || ''), 'beacon', String(u || ''));
           var b = bodyStr(data);
