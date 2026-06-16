@@ -161,98 +161,7 @@
     setTimeout(scanAndReport, 400);
   }
 
-  // ---- Site security scanning (mixed content, SRI) ----
-
-  function collectSecurityIssues() {
-    var data = { mixedContent: {}, scripts: [], links: [] };
-    var isHttps = location.protocol === 'https:';
-    data.mixedContent.pageIsHttp = location.protocol === 'http:';
-    data.mixedContent.httpResources = [];
-    data.mixedContent.insecureForms = [];
-
-    if (isHttps) {
-      try {
-        var entries = performance.getEntriesByType('resource') || [];
-        for (var i = 0; i < entries.length; i++) {
-          if (entries[i].name && entries[i].name.indexOf('http://') === 0) {
-            data.mixedContent.httpResources.push(entries[i].name);
-          }
-        }
-      } catch (e) { /* ignore */ }
-    }
-
-    try {
-      var forms = document.querySelectorAll('form[action]');
-      for (var fi = 0; fi < forms.length; fi++) {
-        var action = forms[fi].getAttribute('action') || '';
-        if (action.indexOf('http://') === 0) {
-          data.mixedContent.insecureForms.push(action);
-        }
-      }
-    } catch (e) { /* ignore */ }
-
-    var pageHost = location.hostname;
-    try {
-      var scripts = document.querySelectorAll('script[src]');
-      for (var si = 0; si < scripts.length; si++) {
-        try {
-          var su = new URL(scripts[si].src);
-          data.scripts.push({
-            src: scripts[si].src,
-            crossOrigin: su.hostname !== pageHost,
-            hasIntegrity: !!scripts[si].getAttribute('integrity')
-          });
-        } catch (e) { /* invalid URL */ }
-      }
-    } catch (e) { /* ignore */ }
-
-    try {
-      var links = document.querySelectorAll('link[rel="stylesheet"][href]');
-      for (var li = 0; li < links.length; li++) {
-        try {
-          var lu = new URL(links[li].href);
-          data.links.push({
-            href: links[li].href,
-            crossOrigin: lu.hostname !== pageHost,
-            hasIntegrity: !!links[li].getAttribute('integrity')
-          });
-        } catch (e) { /* invalid URL */ }
-      }
-    } catch (e) { /* ignore */ }
-
-    return data;
-  }
-
-  var secReported = false;
-  function reportSecurity() {
-    if (secReported) return;
-    secReported = true;
-    try {
-      var data = collectSecurityIssues();
-      chrome.runtime.sendMessage({
-        type: 'GAKS_SITE_SECURITY',
-        origin: origin,
-        pageUrl: pageUrl,
-        data: data
-      }, function () { void chrome.runtime.lastError; });
-    } catch (e) { /* context invalidated */ }
-  }
-
   function start() {
-    // Bridge DOM pattern findings from MAIN-world interceptor.
-    window.addEventListener('message', function (ev) {
-      if (ev.source !== window) return;
-      if (!ev.data || ev.data.type !== '__GAKS_SEC_FINDING__') return;
-      try {
-        chrome.runtime.sendMessage({
-          type: 'GAKS_DOM_PATTERNS',
-          origin: origin,
-          pageUrl: pageUrl,
-          counts: ev.data.counts
-        }, function () { void chrome.runtime.lastError; });
-      } catch (e) { /* context invalidated */ }
-    });
-
     // Bridge network-interception findings from the MAIN-world interceptor.
     // Always forward to the background worker — even if the key was already seen
     // via DOM/storage, upsertFinding will merge the 'network' source tag.
@@ -306,9 +215,6 @@
     // A few delayed sweeps catch async resource loads not tied to DOM mutations.
     setTimeout(scheduleScan, 1500);
     setTimeout(scheduleScan, 4000);
-
-    // Site security scan (mixed content, SRI) — run once after DOM settles.
-    setTimeout(reportSecurity, 2000);
 
     // Allow the popup/worker to force a re-scan (e.g. user clicked "rescan").
     chrome.runtime.onMessage.addListener(function (msg, sender, sendResponse) {

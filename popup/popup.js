@@ -1,6 +1,5 @@
 import { getDb, findingId, getCollection, saveToCollection, removeFromCollection } from '../lib/store.js';
 import { assessRisk } from '../lib/providers.js';
-import { getSiteSecurityDb, siteSeveritySummary } from '../lib/site-audit.js';
 
 const CLASS_HELP = {
   'enabled': 'Reachable with NO Referer — works from anywhere (exploitable)',
@@ -332,54 +331,12 @@ async function render() {
   els.count.textContent = items.length + (items.length === 1 ? ' key' : ' keys');
 }
 
-async function renderSecuritySummary() {
-  const secSection = document.getElementById('secSection');
-  const secSummary = document.getElementById('secSummary');
-  if (!secSection || !secSummary) return;
-
-  let origin = '';
-  try { origin = activeTab && activeTab.url ? new URL(activeTab.url).origin : ''; } catch (e) { /* */ }
-  if (!origin) { secSection.hidden = true; return; }
-
-  try {
-    const db = await getSiteSecurityDb();
-    const site = db[origin];
-    if (!site || !site.issues || !site.issues.length) {
-      secSection.hidden = true;
-      return;
-    }
-    secSection.hidden = false;
-    const sm = siteSeveritySummary(site.issues);
-    secSummary.innerHTML = '';
-    const pills = [];
-    if (sm.critical) pills.push('<span class="sec-pill critical">' + sm.critical + ' critical</span>');
-    if (sm.high) pills.push('<span class="sec-pill high">' + sm.high + ' high</span>');
-    if (sm.medium) pills.push('<span class="sec-pill medium">' + sm.medium + ' medium</span>');
-    if (sm.low) pills.push('<span class="sec-pill low">' + sm.low + ' low</span>');
-    if (sm.info) pills.push('<span class="sec-pill info">' + sm.info + ' info</span>');
-    if (!pills.length) {
-      secSummary.innerHTML = '<span class="sec-ok">No issues found</span>';
-    } else {
-      secSummary.innerHTML = pills.join('') +
-        '<button class="sec-link" id="secDashLink">View details →</button>';
-      const link = document.getElementById('secDashLink');
-      if (link) link.addEventListener('click', () => {
-        chrome.tabs.create({ url: chrome.runtime.getURL('dashboard/dashboard.html') });
-      });
-    }
-  } catch (e) {
-    secSection.hidden = true;
-  }
-}
-
 async function init() {
   const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
   activeTab = tabs[0] || null;
   await render();
-  await renderSecuritySummary();
   // Findings can arrive shortly after the popup opens (async scans).
   setTimeout(render, 1200);
-  setTimeout(renderSecuritySummary, 1500);
 }
 
 init();

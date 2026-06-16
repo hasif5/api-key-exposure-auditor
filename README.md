@@ -78,10 +78,11 @@ Detection runs across every surface a key can hide in:
 | **JavaScript bundles** | All `<script src>`, preloads, and modulepreloads are fetched and scanned |
 | **Source maps** | `sourceMappingURL` files are followed; original un-minified source is scanned |
 | **Recursive asset graph** | Referenced chunks, JSON, and CSS followed up to 3 levels deep (same-origin) |
-| **Common config paths** | `/.env`, `/config.json`, `/firebase-config.json`, etc. probed once per origin |
+| **Common config paths** | `/.env`, `/config.json`, `/firebase-config.json`, plus exposed dumps (`/.git/config`, `/wp-config.php.bak`, `/actuator/env`, `/phpinfo.php`) probed once per origin |
 | **Web storage** | `localStorage` and `sessionStorage` |
 | **Network traffic** | Live interception of `fetch()`, `XMLHttpRequest`, `WebSocket`, `EventSource`, and `sendBeacon` request/response bodies, headers, and URLs |
 | **webRequest headers** | `key=` params, `X-Goog-Api-Key`, `Authorization: Bearer`, `x-api-key` |
+| **Response headers & cookies** | Top-level response header values and the origin's cookies are scanned for keys |
 | **Resource timing** | URLs from `performance.getEntriesByType('resource')` |
 
 A key is logged **once** and enriched with every origin, page, and source it's seen on -- no duplicates.
@@ -146,6 +147,7 @@ All data stays **local** in `chrome.storage.local`. The extension contacts the n
 |---|---|
 | `<all_urls>` host access | Read page DOM/network on any site and fetch its scripts for scanning |
 | `webRequest` | Observe `key=` params and API-key headers on requests |
+| `cookies` | Read the current origin's cookies to scan their values for keys |
 | `storage` | Persist findings locally |
 | `scripting`, `tabs` | Per-tab badge and content coordination |
 | `downloads` | Export findings as JSON/CSV |

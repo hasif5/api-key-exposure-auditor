@@ -13,9 +13,6 @@ import { upsertFinding, setAudits, getFinding, getDb, migrate,
 import { isMapsContext } from './lib/keys.js';
 import { detectKeys, getProvider, providerForKey } from './lib/providers.js';
 import { urlHostIsIgnored } from './lib/ignore.js';
-import { analyzeHeaders, analyzeCookies, analyzeMixedContent,
-  analyzeSri, analyzeDomPatterns, probeExposurePaths,
-  getSiteSecurityDb, upsertSiteIssues, clearSiteSecurity } from './lib/site-audit.js';
 
 // One-time cleanup: collapse any duplicates left by an earlier version.
 migrate().catch((e) => console.error('[GAKS] migrate failed:', e));
@@ -54,11 +51,15 @@ let scriptActive = 0;
 // Common server-side paths where secrets/config commonly leak. Probed once per
 // page origin (a short, well-known list — not a brute-force scan).
 const COMMON_PATHS = [
-  '/.env', '/.env.local', '/.env.production', '/.env.development',
+  '/.env', '/.env.local', '/.env.production', '/.env.development', '/.env.bak',
   '/config.json', '/config.js', '/app.config.js', '/appsettings.json',
   '/assets/config.json', '/static/config.json', '/env.js', '/env.json',
   '/firebase-config.json', '/firebaseConfig.js', '/manifest.json',
-  '/.well-known/assetlinks.json'
+  '/.well-known/assetlinks.json',
+  // Exposed configs/dumps that commonly carry live secrets — fetched and
+  // scanned for keys like any other config asset.
+  '/.git/config', '/wp-config.php.bak', '/config.php.bak',
+  '/actuator/env', '/phpinfo.php'
 ];
 const probedOrigins = new Set();
 
@@ -214,45 +215,50 @@ chrome.webRequest.onBeforeSendHeaders.addListener(
   ['requestHeaders']
 );
 
-// ---- Security header + cookie analysis (per-origin, main-frame only) ------
+// ---- Response-header + cookie key scanning (per-origin, main-frame only) ---
+// Response headers and cookies are two more places a key can leak; scan their
+// values and feed any hits into the same findings DB.
 
-const secHeaderScanned = new Set();
+const headerScanned = new Set();
 
 chrome.webRequest.onHeadersReceived.addListener(
-  (details) => { analyzeResponseHeaders(details).catch(() => {}); },
+  (details) => { scanHeadersAndCookies(details).catch(() => {}); },
   { urls: ['<all_urls>'], types: ['main_frame'] },
   ['responseHeaders']
 );
 
-async function analyzeResponseHeaders(details) {
+async function scanHeadersAndCookies(details) {
   let origin;
   try { origin = new URL(details.url).origin; } catch (e) { return; }
   if (pageIgnored(origin)) return;
-  if (secHeaderScanned.has(origin)) return;
-  secHeaderScanned.add(origin);
+  if (headerScanned.has(origin)) return;
+  headerScanned.add(origin);
 
-  const issues = analyzeHeaders(details.responseHeaders || []);
+  // Response header values.
+  const hdrText = (details.responseHeaders || [])
+    .map((h) => (h.name || '') + ': ' + (h.value || '')).join('\n');
+  for (const h of detectKeys(hdrText)) {
+    noteKeyForTab(details.tabId, h.key);
+    upsertFinding({
+      key: h.key, provider: h.provider || 'google', secret: h.secret,
+      origin, pageUrl: details.url, source: 'header',
+      snippet: 'response header — ' + h.snippet, mapsContext: h.mapsContext
+    });
+  }
 
+  // Cookie values.
   try {
     const cookies = await chrome.cookies.getAll({ url: details.url });
-    const isHttps = details.url.startsWith('https://');
-    issues.push(...analyzeCookies(cookies, isHttps));
+    const cookieText = cookies.map((c) => c.name + '=' + c.value).join('\n');
+    for (const h of detectKeys(cookieText)) {
+      noteKeyForTab(details.tabId, h.key);
+      upsertFinding({
+        key: h.key, provider: h.provider || 'google', secret: h.secret,
+        origin, pageUrl: details.url, source: 'cookie',
+        snippet: 'cookie — ' + h.snippet, mapsContext: h.mapsContext
+      });
+    }
   } catch (e) { /* cookies API unavailable */ }
-
-  if (issues.length) upsertSiteIssues(origin, details.url, issues);
-}
-
-// ---- Server-side exposure probes (once per origin) -------------------------
-
-const secProbedOrigins = new Set();
-
-function probeExposure(origin, pageUrl) {
-  if (!origin || origin === 'unknown' || secProbedOrigins.has(origin)) return;
-  if (pageIgnored(origin)) return;
-  secProbedOrigins.add(origin);
-  probeExposurePaths(origin).then((issues) => {
-    if (issues.length) upsertSiteIssues(origin, pageUrl, issues);
-  }).catch(() => {});
 }
 
 // ---- Messages from content scripts / popup / dashboard ---------------------
@@ -288,7 +294,6 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     (Array.isArray(msg.urls) ? msg.urls : []).forEach((u) =>
       enqueueScript(u, origin, msg.pageUrl, tabId, 0));
     probeCommonPaths(origin, msg.pageUrl, tabId);
-    probeExposure(origin, msg.pageUrl);
     return false; // fire-and-forget
   }
 
@@ -319,39 +324,6 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
   if (msg.type === 'GAKS_GET_DB') {
     getDb().then((db) => sendResponse({ ok: true, db })).catch(() => sendResponse({ ok: false }));
-    return true;
-  }
-
-  if (msg.type === 'GAKS_SITE_SECURITY') {
-    const secOrigin = msg.origin || 'unknown';
-    if (!pageIgnored(secOrigin) && msg.data) {
-      const issues = [
-        ...analyzeMixedContent(msg.data.mixedContent || {}),
-        ...analyzeSri(msg.data.scripts || [], msg.data.links || [])
-      ];
-      if (issues.length) upsertSiteIssues(secOrigin, msg.pageUrl, issues);
-    }
-    return false;
-  }
-
-  if (msg.type === 'GAKS_DOM_PATTERNS') {
-    const secOrigin = msg.origin || 'unknown';
-    if (!pageIgnored(secOrigin)) {
-      const issues = analyzeDomPatterns(msg.counts || {});
-      if (issues.length) upsertSiteIssues(secOrigin, msg.pageUrl, issues);
-    }
-    return false;
-  }
-
-  if (msg.type === 'GAKS_GET_SITE_SECURITY') {
-    getSiteSecurityDb().then((db) => sendResponse({ ok: true, db }))
-      .catch(() => sendResponse({ ok: false }));
-    return true;
-  }
-
-  if (msg.type === 'GAKS_CLEAR_SITE_SECURITY') {
-    clearSiteSecurity().then(() => sendResponse({ ok: true }))
-      .catch(() => sendResponse({ ok: false }));
     return true;
   }
 

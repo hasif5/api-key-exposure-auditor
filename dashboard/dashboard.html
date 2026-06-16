@@ -9,7 +9,7 @@
 <body>
   <header class="top">
     <div class="brand"><span class="logo">🔑</span><h1>API Key Exposure Auditor &mdash; Research Dashboard</h1></div>
-    <div class="toolbar" id="keysToolbar">
+    <div class="toolbar">
       <input type="search" id="filter" placeholder="Filter by key / origin…" />
       <label class="chk" title="Adds billable inference/generation calls that consume tokens (OpenAI, Anthropic, xAI, Gemini, Vertex)">
         <input type="checkbox" id="genChk" checked /> include billable generation probes
@@ -23,100 +23,77 @@
     </div>
   </header>
 
-  <nav class="tab-nav">
-    <button class="tab-btn active" data-tab="keys">🔑 API Keys</button>
-    <button class="tab-btn" data-tab="security">🛡 Site Security</button>
-  </nav>
+  <section class="warn">
+    <strong>Self-project security only.</strong> The audit performs live requests to provider
+    endpoints (Google, OpenAI, Anthropic, xAI, OpenRouter, Twilio) using each discovered key.
+    These calls may incur cost — only audit keys that belong to you or your organization.
+  </section>
 
-  <!-- ===== API Keys tab ===== -->
-  <div id="tab-keys" class="tab-panel">
-    <section class="warn">
-      <strong>Self-project security only.</strong> The audit performs live requests to provider
-      endpoints (Google, OpenAI, Anthropic, xAI, OpenRouter, Twilio) using each discovered key.
-      These calls may incur cost — only audit keys that belong to you or your organization.
-    </section>
-
-    <details class="settings">
-      <summary>⚙ Ignored domains — detection is skipped on these sites</summary>
-      <p class="hint">Built-in (always on): all <strong>google.*</strong> &amp; Google services, YouTube, Facebook, Instagram, Yahoo. Add your own below (comma- or newline-separated). Saving also removes any already-stored keys from these domains.</p>
-      <textarea id="ignoreInput" placeholder="example.com&#10;another-site.com"></textarea>
-      <div class="row">
-        <button id="ignoreSave" class="btn">Save &amp; purge</button>
-        <span id="ignoreStatus" class="hint"></span>
-      </div>
-    </details>
-
-    <details class="legend">
-      <summary>❔ What do these mean? (risk levels, statuses, providers)</summary>
-      <div class="legend-body">
-        <div class="legend-col">
-          <h4>Risk</h4>
-          <p><span class="risk critical">CRITICAL</span> unrestricted <em>and</em> a billable service is reachable</p>
-          <p><span class="risk high">UNRESTRICTED</span> reachable from anywhere (no referrer/IP lock)</p>
-          <p><span class="risk restricted">RESTRICTED</span> every reachable probe was referrer/IP-locked (safer)</p>
-          <p><span class="risk unknown">UNKNOWN</span> not audited, or nothing reachable</p>
-        </div>
-        <div class="legend-col">
-          <h4>Per-API status (e.g. "Cloud Storage: enabled")</h4>
-          <p><span class="pill enabled">enabled</span> the key works for that API <strong>with no Referer</strong> → usable from anywhere (exploitable)</p>
-          <p><span class="pill restricted-referer">restricted referer</span> / <span class="pill restricted-ip">restricted ip</span> blocked by a referrer/IP restriction</p>
-          <p><span class="pill api-not-enabled">api not enabled</span> that API isn't enabled/allowed for the key</p>
-          <p><span class="pill invalid-key">invalid key</span> invalid/expired · <span class="pill over-quota">over quota</span> quota hit · <span class="pill inconclusive">inconclusive</span> undetermined</p>
-          <p class="legend-note">Each status pill = one Google/OpenAI/Anthropic API the key was tested against. Hover any pill for the exact endpoint, HTTP code, and billable/free.</p>
-        </div>
-        <div class="legend-col">
-          <h4>Provider</h4>
-          <p><span class="prov-badge prov-google">Google</span> <span class="prov-badge prov-openai">OpenAI</span> <span class="prov-badge prov-anthropic">Anthropic</span> <span class="prov-badge prov-openrouter">OpenRouter</span> <span class="prov-badge prov-xai">xAI</span> <span class="prov-badge prov-twilio">Twilio</span></p>
-          <p class="legend-note">OpenAI/Anthropic/OpenRouter/xAI keys are bearer tokens — no restriction is possible, so a valid one is always CRITICAL. Twilio needs the Account SID + Auth Token together; the auditor captures the pair and validates it.</p>
-        </div>
-      </div>
-    </details>
-
-    <div id="progress" class="progress" hidden>
-      <div class="progress-track"><div id="progressBar" class="progress-bar"></div></div>
-      <span id="progressLabel" class="progress-label"></span>
+  <details class="settings">
+    <summary>⚙ Ignored domains — detection is skipped on these sites</summary>
+    <p class="hint">Built-in (always on): all <strong>google.*</strong> &amp; Google services, YouTube, Facebook, Instagram, Yahoo. Add your own below (comma- or newline-separated). Saving also removes any already-stored keys from these domains.</p>
+    <textarea id="ignoreInput" placeholder="example.com&#10;another-site.com"></textarea>
+    <div class="row">
+      <button id="ignoreSave" class="btn">Save &amp; purge</button>
+      <span id="ignoreStatus" class="hint"></span>
     </div>
+  </details>
 
-    <section class="stats" id="stats"></section>
+  <details class="legend">
+    <summary>❔ What do these mean? (risk levels, statuses, providers)</summary>
+    <div class="legend-body">
+      <div class="legend-col">
+        <h4>Risk</h4>
+        <p><span class="risk critical">CRITICAL</span> unrestricted <em>and</em> a billable service is reachable</p>
+        <p><span class="risk high">UNRESTRICTED</span> reachable from anywhere (no referrer/IP lock)</p>
+        <p><span class="risk restricted">RESTRICTED</span> every reachable probe was referrer/IP-locked (safer)</p>
+        <p><span class="risk unknown">UNKNOWN</span> not audited, or nothing reachable</p>
+      </div>
+      <div class="legend-col">
+        <h4>Per-API status (e.g. "Cloud Storage: enabled")</h4>
+        <p><span class="pill enabled">enabled</span> the key works for that API <strong>with no Referer</strong> → usable from anywhere (exploitable)</p>
+        <p><span class="pill restricted-referer">restricted referer</span> / <span class="pill restricted-ip">restricted ip</span> blocked by a referrer/IP restriction</p>
+        <p><span class="pill api-not-enabled">api not enabled</span> that API isn't enabled/allowed for the key</p>
+        <p><span class="pill invalid-key">invalid key</span> invalid/expired · <span class="pill over-quota">over quota</span> quota hit · <span class="pill inconclusive">inconclusive</span> undetermined</p>
+        <p class="legend-note">Each status pill = one Google/OpenAI/Anthropic API the key was tested against. Hover any pill for the exact endpoint, HTTP code, and billable/free.</p>
+      </div>
+      <div class="legend-col">
+        <h4>Provider</h4>
+        <p><span class="prov-badge prov-google">Google</span> <span class="prov-badge prov-openai">OpenAI</span> <span class="prov-badge prov-anthropic">Anthropic</span> <span class="prov-badge prov-openrouter">OpenRouter</span> <span class="prov-badge prov-xai">xAI</span> <span class="prov-badge prov-twilio">Twilio</span></p>
+        <p class="legend-note">OpenAI/Anthropic/OpenRouter/xAI keys are bearer tokens — no restriction is possible, so a valid one is always CRITICAL. Twilio needs the Account SID + Auth Token together; the auditor captures the pair and validates it.</p>
+      </div>
+    </div>
+  </details>
 
-    <main>
-      <table id="tbl">
-        <colgroup>
-          <col style="width:70px">
-          <col style="width:28%">
-          <col style="width:20%">
-          <col>
-          <col style="width:80px">
-        </colgroup>
-        <thead>
-          <tr>
-            <th>Risk</th>
-            <th>Key</th>
-            <th>Seen on</th>
-            <th>Audit results</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody id="rows"></tbody>
-      </table>
-      <p class="empty" id="emptyMsg">No keys logged yet. Browse sites with the extension enabled, then return here.</p>
-    </main>
+  <div id="progress" class="progress" hidden>
+    <div class="progress-track"><div id="progressBar" class="progress-bar"></div></div>
+    <span id="progressLabel" class="progress-label"></span>
   </div>
 
-  <!-- ===== Site Security tab ===== -->
-  <div id="tab-security" class="tab-panel" hidden>
-    <section class="sec-toolbar">
-      <input type="search" id="secFilter" placeholder="Filter by origin…" />
-      <button id="secClearBtn" class="btn danger">Clear all scans</button>
-    </section>
+  <section class="stats" id="stats"></section>
 
-    <section class="stats" id="secStats"></section>
-
-    <main class="sec-main">
-      <div id="secSites"></div>
-      <p class="empty" id="secEmpty">No site security scans yet. Browse sites with the extension enabled, then return here.</p>
-    </main>
-  </div>
+  <main>
+    <table id="tbl">
+      <colgroup>
+        <col style="width:70px">
+        <col style="width:28%">
+        <col style="width:20%">
+        <col>
+        <col style="width:80px">
+      </colgroup>
+      <thead>
+        <tr>
+          <th>Risk</th>
+          <th>Key</th>
+          <th>Seen on</th>
+          <th>Audit results</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <p class="empty" id="emptyMsg">No keys logged yet. Browse sites with the extension enabled, then return here.</p>
+  </main>
 
   <div id="toast" class="toast"></div>
 
