@@ -19,7 +19,7 @@
   var MAX_BODY = 2 * 1024 * 1024;
   var LOG = '[GAKS-NET] ';
 
-  console.log(LOG + 'interceptor loaded on', location.href);
+  try { console.log(LOG + 'interceptor loaded on', location.href); } catch (e) { /* test sandbox */ }
 
   // ---- Detection patterns (mirror of patterns.js / providers.js) ----
   function twilioSecret(text, index, sid) {
@@ -214,10 +214,13 @@
         console.log(LOG + 'WebSocket intercepted:', String(u || '').slice(0, 120));
         try { scanText(String(u || ''), 'websocket', String(u || '')); } catch (ignore) {}
         var ws = arguments.length > 1 ? new _WS(u, protocols) : new _WS(u);
-        var _wsSend = ws.send.bind(ws);
+        var origSend = ws.send;
         ws.send = function (data) {
-          try { if (typeof data === 'string') scanText(data, 'websocket', String(u || '')); } catch (ignore) {}
-          return _wsSend(data);
+          try { if (typeof data === 'string' && ws.readyState === _WS.OPEN) scanText(data, 'websocket', String(u || '')); } catch (ignore) {}
+          try { return origSend.call(ws, data); } catch (e) {
+            if (ws.readyState !== _WS.OPEN) return;
+            throw e;
+          }
         };
         ws.addEventListener('message', function (ev) {
           try { if (typeof ev.data === 'string') scanText(ev.data, 'websocket', String(u || '')); } catch (ignore) {}
