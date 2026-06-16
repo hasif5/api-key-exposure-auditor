@@ -13,6 +13,9 @@ import { upsertFinding, setAudits, getFinding, getDb, migrate,
 import { isMapsContext } from './lib/keys.js';
 import { detectKeys, getProvider, providerForKey } from './lib/providers.js';
 import { urlHostIsIgnored } from './lib/ignore.js';
+import { analyzeHeaders, analyzeCookies, analyzeMixedContent,
+  analyzeSri, analyzeDomPatterns, probeExposurePaths,
+  getSiteSecurityDb, upsertSiteIssues, clearSiteSecurity } from './lib/site-audit.js';
 
 // One-time cleanup: collapse any duplicates left by an earlier version.
 migrate().catch((e) => console.error('[GAKS] migrate failed:', e));
@@ -211,6 +214,47 @@ chrome.webRequest.onBeforeSendHeaders.addListener(
   ['requestHeaders']
 );
 
+// ---- Security header + cookie analysis (per-origin, main-frame only) ------
+
+const secHeaderScanned = new Set();
+
+chrome.webRequest.onHeadersReceived.addListener(
+  (details) => { analyzeResponseHeaders(details).catch(() => {}); },
+  { urls: ['<all_urls>'], types: ['main_frame'] },
+  ['responseHeaders']
+);
+
+async function analyzeResponseHeaders(details) {
+  let origin;
+  try { origin = new URL(details.url).origin; } catch (e) { return; }
+  if (pageIgnored(origin)) return;
+  if (secHeaderScanned.has(origin)) return;
+  secHeaderScanned.add(origin);
+
+  const issues = analyzeHeaders(details.responseHeaders || []);
+
+  try {
+    const cookies = await chrome.cookies.getAll({ url: details.url });
+    const isHttps = details.url.startsWith('https://');
+    issues.push(...analyzeCookies(cookies, isHttps));
+  } catch (e) { /* cookies API unavailable */ }
+
+  if (issues.length) upsertSiteIssues(origin, details.url, issues);
+}
+
+// ---- Server-side exposure probes (once per origin) -------------------------
+
+const secProbedOrigins = new Set();
+
+function probeExposure(origin, pageUrl) {
+  if (!origin || origin === 'unknown' || secProbedOrigins.has(origin)) return;
+  if (pageIgnored(origin)) return;
+  secProbedOrigins.add(origin);
+  probeExposurePaths(origin).then((issues) => {
+    if (issues.length) upsertSiteIssues(origin, pageUrl, issues);
+  }).catch(() => {});
+}
+
 // ---- Messages from content scripts / popup / dashboard ---------------------
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
@@ -244,6 +288,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     (Array.isArray(msg.urls) ? msg.urls : []).forEach((u) =>
       enqueueScript(u, origin, msg.pageUrl, tabId, 0));
     probeCommonPaths(origin, msg.pageUrl, tabId);
+    probeExposure(origin, msg.pageUrl);
     return false; // fire-and-forget
   }
 
@@ -274,6 +319,39 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
   if (msg.type === 'GAKS_GET_DB') {
     getDb().then((db) => sendResponse({ ok: true, db })).catch(() => sendResponse({ ok: false }));
+    return true;
+  }
+
+  if (msg.type === 'GAKS_SITE_SECURITY') {
+    const secOrigin = msg.origin || 'unknown';
+    if (!pageIgnored(secOrigin) && msg.data) {
+      const issues = [
+        ...analyzeMixedContent(msg.data.mixedContent || {}),
+        ...analyzeSri(msg.data.scripts || [], msg.data.links || [])
+      ];
+      if (issues.length) upsertSiteIssues(secOrigin, msg.pageUrl, issues);
+    }
+    return false;
+  }
+
+  if (msg.type === 'GAKS_DOM_PATTERNS') {
+    const secOrigin = msg.origin || 'unknown';
+    if (!pageIgnored(secOrigin)) {
+      const issues = analyzeDomPatterns(msg.counts || {});
+      if (issues.length) upsertSiteIssues(secOrigin, msg.pageUrl, issues);
+    }
+    return false;
+  }
+
+  if (msg.type === 'GAKS_GET_SITE_SECURITY') {
+    getSiteSecurityDb().then((db) => sendResponse({ ok: true, db }))
+      .catch(() => sendResponse({ ok: false }));
+    return true;
+  }
+
+  if (msg.type === 'GAKS_CLEAR_SITE_SECURITY') {
+    clearSiteSecurity().then(() => sendResponse({ ok: true }))
+      .catch(() => sendResponse({ ok: false }));
     return true;
   }
 

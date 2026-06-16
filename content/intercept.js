@@ -311,4 +311,48 @@
       };
     }
   } catch (ignore) {}
+
+  // ---- Security: detect eval() / document.write() usage --------------------
+  var SEC_MSG = '__GAKS_SEC_FINDING__';
+  var secCounts = { eval: 0, documentWrite: 0 };
+  var secPending = false;
+
+  function flushSecCounts() {
+    if (secPending) return;
+    secPending = true;
+    setTimeout(function () {
+      secPending = false;
+      try {
+        window.postMessage({
+          type: SEC_MSG,
+          counts: { eval: secCounts.eval, documentWrite: secCounts.documentWrite }
+        }, '*');
+      } catch (e) { /* ignore */ }
+    }, 600);
+  }
+
+  try {
+    var _eval = window.eval;
+    window.eval = function () {
+      secCounts.eval++;
+      flushSecCounts();
+      return _eval.apply(window, arguments);
+    };
+    window.eval.toString = function () { return _eval.toString(); };
+  } catch (ignore) {}
+
+  try {
+    var _write = Document.prototype.write;
+    var _writeln = Document.prototype.writeln;
+    Document.prototype.write = function () {
+      secCounts.documentWrite++;
+      flushSecCounts();
+      return _write.apply(this, arguments);
+    };
+    Document.prototype.writeln = function () {
+      secCounts.documentWrite++;
+      flushSecCounts();
+      return _writeln.apply(this, arguments);
+    };
+  } catch (ignore) {}
 })();
