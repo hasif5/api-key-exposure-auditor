@@ -94,6 +94,27 @@
   });
 
   // ---- Helpers ----
+  var MAX_BIN = 256 * 1024;
+  var _decoder = typeof TextDecoder !== 'undefined' ? new TextDecoder('utf-8', { fatal: false }) : null;
+
+  function decodeBuffer(buf) {
+    if (!_decoder || !buf) return null;
+    try {
+      var ab = buf instanceof ArrayBuffer ? buf : buf.buffer ? buf.buffer : null;
+      if (!ab || ab.byteLength === 0 || ab.byteLength > MAX_BIN) return null;
+      return _decoder.decode(ab);
+    } catch (e) { return null; }
+  }
+
+  function decodeBlob(blob, cb) {
+    if (!blob || blob.size === 0 || blob.size > MAX_BIN) return;
+    try {
+      var r = new FileReader();
+      r.onload = function () { if (typeof r.result === 'string') cb(r.result); };
+      r.readAsText(blob);
+    } catch (e) { /* ignore */ }
+  }
+
   function bodyStr(body) {
     if (!body) return null;
     if (typeof body === 'string') return body;
@@ -214,16 +235,36 @@
         console.log(LOG + 'WebSocket intercepted:', String(u || '').slice(0, 120));
         try { scanText(String(u || ''), 'websocket', String(u || '')); } catch (ignore) {}
         var ws = arguments.length > 1 ? new _WS(u, protocols) : new _WS(u);
+        var wsUrl = String(u || '');
         var origSend = ws.send;
         ws.send = function (data) {
-          try { if (typeof data === 'string' && ws.readyState === _WS.OPEN) scanText(data, 'websocket', String(u || '')); } catch (ignore) {}
+          try {
+            if (ws.readyState === _WS.OPEN) {
+              if (typeof data === 'string') scanText(data, 'websocket', wsUrl);
+              else if (data instanceof ArrayBuffer || (data && data.buffer instanceof ArrayBuffer)) {
+                var t = decodeBuffer(data);
+                if (t) scanText(t, 'websocket', wsUrl);
+              } else if (typeof Blob !== 'undefined' && data instanceof Blob) {
+                decodeBlob(data, function (t) { scanText(t, 'websocket', wsUrl); });
+              }
+            }
+          } catch (ignore) {}
           try { return origSend.call(ws, data); } catch (e) {
             if (ws.readyState !== _WS.OPEN) return;
             throw e;
           }
         };
         ws.addEventListener('message', function (ev) {
-          try { if (typeof ev.data === 'string') scanText(ev.data, 'websocket', String(u || '')); } catch (ignore) {}
+          try {
+            var d = ev.data;
+            if (typeof d === 'string') scanText(d, 'websocket', wsUrl);
+            else if (d instanceof ArrayBuffer) {
+              var t = decodeBuffer(d);
+              if (t) scanText(t, 'websocket', wsUrl);
+            } else if (typeof Blob !== 'undefined' && d instanceof Blob) {
+              decodeBlob(d, function (t) { scanText(t, 'websocket', wsUrl); });
+            }
+          } catch (ignore) {}
         });
         return ws;
       };
