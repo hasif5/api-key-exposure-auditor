@@ -163,15 +163,20 @@
 
   function start() {
     // Bridge network-interception findings from the MAIN-world interceptor.
+    // Always forward to the background worker — even if the key was already seen
+    // via DOM/storage, upsertFinding will merge the 'network' source tag.
     window.addEventListener('message', function (ev) {
       if (ev.source !== window) return;
       if (!ev.data || ev.data.type !== '__GAKS_NET_FINDING__') return;
       var d = ev.data;
       var key = d.key;
       if (!key) return;
-      var prev = reported[key];
-      if (prev && !(d.mapsContext && !prev.mapsContext)) return;
-      reported[key] = { source: 'network', snippet: d.snippet, mapsContext: !!d.mapsContext };
+      var netKey = 'net:' + key + ':' + (d.source || '');
+      if (reported[netKey]) return;
+      reported[netKey] = true;
+      if (!reported[key]) {
+        reported[key] = { source: 'network', snippet: d.snippet, mapsContext: !!d.mapsContext };
+      }
       try {
         chrome.runtime.sendMessage({
           type: 'GAKS_FINDINGS',

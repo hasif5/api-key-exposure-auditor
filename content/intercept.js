@@ -106,35 +106,53 @@
     return /json|text|javascript|xml|html|form-urlencoded|yaml|toml/.test(ct);
   }
 
+  function scanHeaders(hdrs, url) {
+    if (!hdrs) return;
+    var ht = '';
+    try {
+      if (typeof Headers !== 'undefined' && hdrs instanceof Headers) {
+        hdrs.forEach(function (v, k) { ht += k + ': ' + v + '\n'; });
+      } else if (typeof hdrs === 'object' && !Array.isArray(hdrs)) {
+        Object.keys(hdrs).forEach(function (k) { ht += k + ': ' + hdrs[k] + '\n'; });
+      } else if (Array.isArray(hdrs)) {
+        hdrs.forEach(function (pair) { if (Array.isArray(pair) && pair.length >= 2) ht += pair[0] + ': ' + pair[1] + '\n'; });
+      }
+    } catch (ignore) {}
+    if (ht) scanText(ht, 'network-request', url);
+  }
+
   // ---- Patch fetch() ----
   try {
     var _fetch = window.fetch;
     window.fetch = function () {
       var args = arguments, url = '', init;
       try {
-        if (args[0] && typeof args[0] === 'object' && typeof args[0].url === 'string') url = args[0].url;
-        else url = String(args[0] || '');
+        var isReq = typeof Request !== 'undefined' && args[0] instanceof Request;
+        if (isReq) {
+          url = args[0].url;
+          scanText(url, 'network-request', url);
+          scanHeaders(args[0].headers, url);
+          // Request body can only be read once; reading it would break the
+          // actual fetch, so we skip it and rely on the init override below.
+        } else {
+          url = String(args[0] || '');
+          scanText(url, 'network-request', url);
+        }
         init = args[1] || {};
-        scanText(url, 'network-request', url);
         var b = bodyStr(init.body);
         if (b) scanText(b, 'network-request', url);
-        if (init.headers) {
-          var ht = '';
-          if (typeof Headers !== 'undefined' && init.headers instanceof Headers) {
-            try { init.headers.forEach(function (v, k) { ht += k + ': ' + v + '\n'; }); } catch (ignore) {}
-          } else if (typeof init.headers === 'object') {
-            try { Object.keys(init.headers).forEach(function (k) { ht += k + ': ' + init.headers[k] + '\n'; }); } catch (ignore) {}
-          }
-          if (ht) scanText(ht, 'network-request', url);
-        }
+        if (init.headers) scanHeaders(init.headers, url);
       } catch (ignore) {}
       var promise = _fetch.apply(this, args);
       promise.then(function (res) {
         try {
           var ct = (res.headers.get('content-type') || '').toLowerCase();
-          if (!textualCt(ct)) return;
+          // Scan all responses that aren't obviously binary (images, video, audio, fonts, wasm)
+          if (/^(image|video|audio|font)\b/.test(ct) || /wasm|octet-stream/.test(ct)) return;
           res.clone().text().then(function (t) {
-            try { scanText(t, 'network-response', res.url || url); } catch (ignore) {}
+            if (t && t.length < MAX_BODY) {
+              try { scanText(t, 'network-response', res.url || url); } catch (ignore) {}
+            }
           }).catch(function () {});
         } catch (ignore) {}
       }).catch(function () {});
@@ -170,7 +188,7 @@
       xhr.addEventListener('load', function () {
         try {
           var ct = (xhr.getResponseHeader('content-type') || '').toLowerCase();
-          if (!textualCt(ct)) return;
+          if (/^(image|video|audio|font)\b/.test(ct) || /wasm|octet-stream/.test(ct)) return;
           if (xhr.responseText) scanText(xhr.responseText, 'network-response', xhr.__gaks_url);
         } catch (ignore) {}
       });
