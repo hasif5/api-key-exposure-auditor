@@ -172,7 +172,20 @@ tbody tr:hover { background: #191f25; }
 .yes { color: #7ee2a8; font-weight: 600; }
 .no { color: var(--muted); }
 
-.summary { display: flex; flex-wrap: wrap; gap: 4px; max-width: 320px; }
+.audit-rows { max-width: 360px; }
+.audit-row {
+  display: grid;
+  grid-template-columns: 90px 1fr auto;
+  gap: 6px;
+  align-items: center;
+  font-size: 11px;
+  padding: 3px 0;
+  border-top: 1px dashed var(--border);
+}
+.audit-row:first-child { border-top: none; }
+.audit-svc { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.audit-detail { color: var(--muted); font-size: 10px; word-break: break-word; }
+.audit-pills { white-space: nowrap; }
 .pill {
   font-size: 10px; padding: 2px 7px; border-radius: 10px; white-space: nowrap;
   background: var(--panel2); border: 1px solid var(--border); cursor: default;

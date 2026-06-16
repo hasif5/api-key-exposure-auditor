@@ -114,7 +114,7 @@ function classLabel(c) { return c.replace(/-/g, ' '); }
 
 function auditSummary(audits) {
   const wrap = document.createElement('div');
-  wrap.className = 'summary';
+  wrap.className = 'audit-rows';
   if (!audits || !audits.length) {
     const s = document.createElement('span');
     s.className = 'tag';
@@ -123,13 +123,37 @@ function auditSummary(audits) {
     return wrap;
   }
   audits.forEach((a) => {
-    const p = document.createElement('span');
-    p.className = 'pill ' + a.classification;
-    p.title = (CLASS_HELP[a.classification] || classLabel(a.classification)) +
-      '\n\n' + a.service + ' · ' + a.endpoint + ' — HTTP ' + a.httpStatus +
-      (a.billable ? ' · billable' : ' · free') + (a.detail ? '\n' + a.detail : '');
-    p.textContent = a.service + ': ' + classLabel(a.classification);
-    wrap.appendChild(p);
+    const row = document.createElement('div');
+    row.className = 'audit-row';
+
+    const svc = document.createElement('span');
+    svc.className = 'audit-svc';
+    svc.textContent = a.service + ' · ' + a.endpoint;
+
+    const detail = document.createElement('span');
+    detail.className = 'audit-detail';
+    detail.textContent = (a.httpStatus ? 'HTTP ' + a.httpStatus + ' — ' : '') + (a.detail || a.apiStatus || '');
+
+    const pills = document.createElement('span');
+    pills.className = 'audit-pills';
+    const pill = document.createElement('span');
+    pill.className = 'pill ' + a.classification;
+    pill.textContent = classLabel(a.classification);
+    pill.title = CLASS_HELP[a.classification] || classLabel(a.classification);
+    pills.appendChild(pill);
+    if (a.billable) {
+      const bp = document.createElement('span');
+      bp.className = 'pill billable';
+      bp.textContent = '$';
+      bp.title = a.costNote || 'Billable';
+      bp.style.marginLeft = '3px';
+      pills.appendChild(bp);
+    }
+
+    row.appendChild(svc);
+    row.appendChild(detail);
+    row.appendChild(pills);
+    wrap.appendChild(row);
   });
   return wrap;
 }
