@@ -157,7 +157,8 @@ var GAKS = (function () {
     return genericEntropy(v) >= 3.0;
   }
 
-  function detectGeneric(text, seen, out) {
+  function detectGeneric(text, seen, out, pfx) {
+    pfx = pfx || '';
     for (var i = 0; i < GENERIC_TOKEN_PATTERNS.length; i++) {
       var pat = GENERIC_TOKEN_PATTERNS[i];
       pat.re.lastIndex = 0;
@@ -167,7 +168,7 @@ var GAKS = (function () {
         if (seen[key]) continue;
         seen[key] = true;
         out.push({ key: key, provider: 'unknown', reason: pat.label,
-          snippet: pat.label + ' — ' + snippetAround(text, m.index, key.length, 100), mapsContext: false });
+          snippet: pfx + pat.label + ' — ' + snippetAround(text, m.index, key.length, 100), mapsContext: false });
       }
     }
     GENERIC_ASSIGN_RE.lastIndex = 0;
@@ -178,15 +179,41 @@ var GAKS = (function () {
       seen[val] = true;
       var idx = a.index + a[0].lastIndexOf(val);
       out.push({ key: val, provider: 'unknown', reason: 'secret-like value assigned to "' + kw + '"',
-        snippet: 'assigned to "' + kw + '" — ' + snippetAround(text, idx, val.length, 100), mapsContext: false });
+        snippet: pfx + 'assigned to "' + kw + '" — ' + snippetAround(text, idx, val.length, 100), mapsContext: false });
     }
   }
 
-  // Returns [{ key, provider, snippet, mapsContext }] for every key in `text`.
-  function findInText(text) {
-    var out = [];
-    if (!text) return out;
-    var seen = Object.create(null);
+  // ---- Decode-and-rescan (mirror of lib/providers.js) ----
+  var B64_BLOB_RE = /(?<![A-Za-z0-9+/=_-])[A-Za-z0-9+/_-]{24,}={0,2}(?![A-Za-z0-9+/=_-])/g;
+  function b64decode(s) {
+    try {
+      var t = s.replace(/-/g, '+').replace(/_/g, '/');
+      var pad = t.length % 4;
+      if (pad) t += new Array(5 - pad).join('=');
+      var out = (typeof atob === 'function') ? atob(t) : null;
+      if (!out) return null;
+      var printable = 0;
+      for (var i = 0; i < out.length; i++) { var c = out.charCodeAt(i); if (c === 9 || c === 10 || c === 13 || (c >= 32 && c < 127)) printable++; }
+      return out.length >= 8 && printable / out.length > 0.85 ? out : null;
+    } catch (e) { return null; }
+  }
+  function decodeLayers(text) {
+    var layers = [];
+    if (text.length < 100000 && text.indexOf('%') !== -1) {
+      try { var u = decodeURIComponent(text); if (u !== text) layers.push(u); } catch (e) { /* malformed */ }
+    }
+    B64_BLOB_RE.lastIndex = 0;
+    var m, examined = 0, decoded = 0;
+    while ((m = B64_BLOB_RE.exec(text)) !== null && examined < 600 && decoded < 25) {
+      examined++;
+      var d = b64decode(m[0]);
+      if (d) { layers.push(d.length > 100000 ? d.slice(0, 100000) : d); decoded++; }
+    }
+    return layers;
+  }
+
+  function scanInto(text, seen, out, pfx) {
+    pfx = pfx || '';
     for (var p = 0; p < PROVIDER_RES.length; p++) {
       var prov = PROVIDER_RES[p];
       prov.re.lastIndex = 0;
@@ -199,7 +226,7 @@ var GAKS = (function () {
           if (!prov.context.test(ctx)) continue; // not enough evidence — skip
         }
         seen[key] = true;
-        var snippet = snippetAround(text, m.index, key.length);
+        var snippet = pfx + snippetAround(text, m.index, key.length);
         var secret = prov.secret ? prov.secret(text, m.index, key) : null;
         if (secret) { snippet += ' · secret: ' + secret; seen[secret] = true; }
         out.push({
@@ -211,7 +238,17 @@ var GAKS = (function () {
         });
       }
     }
-    detectGeneric(text, seen, out);
+    detectGeneric(text, seen, out, pfx);
+  }
+
+  // Returns [{ key, provider, snippet, mapsContext }] for every key in `text`.
+  function findInText(text) {
+    var out = [];
+    if (!text) return out;
+    var seen = Object.create(null);
+    scanInto(text, seen, out, '');
+    var layers = decodeLayers(text);
+    for (var i = 0; i < layers.length; i++) scanInto(layers[i], seen, out, '[decoded] ');
     return out;
   }
 

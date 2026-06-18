@@ -123,9 +123,44 @@
   var reported = {};
   var queue = [];
 
+  // ---- Decode-and-rescan (mirror of lib/providers.js) ----
+  var B64_BLOB_RE = /(?<![A-Za-z0-9+/=_-])[A-Za-z0-9+/_-]{24,}={0,2}(?![A-Za-z0-9+/=_-])/g;
+  function b64decode(s) {
+    try {
+      var t = s.replace(/-/g, '+').replace(/_/g, '/');
+      var pad = t.length % 4;
+      if (pad) t += new Array(5 - pad).join('=');
+      var out = (typeof atob === 'function') ? atob(t) : null;
+      if (!out) return null;
+      var printable = 0;
+      for (var i = 0; i < out.length; i++) { var c = out.charCodeAt(i); if (c === 9 || c === 10 || c === 13 || (c >= 32 && c < 127)) printable++; }
+      return out.length >= 8 && printable / out.length > 0.85 ? out : null;
+    } catch (e) { return null; }
+  }
+  function decodeLayers(text) {
+    var layers = [];
+    if (text.length < 100000 && text.indexOf('%') !== -1) {
+      try { var u = decodeURIComponent(text); if (u !== text) layers.push(u); } catch (e) { /* malformed */ }
+    }
+    B64_BLOB_RE.lastIndex = 0;
+    var m, examined = 0, decoded = 0;
+    while ((m = B64_BLOB_RE.exec(text)) !== null && examined < 600 && decoded < 25) {
+      examined++;
+      var d = b64decode(m[0]);
+      if (d) { layers.push(d.length > 100000 ? d.slice(0, 100000) : d); decoded++; }
+    }
+    return layers;
+  }
+
   function scanText(text, source, url) {
     if (!text || typeof text !== 'string') return;
     if (text.length > MAX_BODY) text = text.slice(0, MAX_BODY);
+    scanOne(text, source, url, '');
+    var layers = decodeLayers(text);
+    for (var i = 0; i < layers.length; i++) scanOne(layers[i], source, url, '[decoded] ');
+  }
+
+  function scanOne(text, source, url, pfx) {
     for (var p = 0; p < PATTERNS.length; p++) {
       var pat = PATTERNS[p];
       pat.re.lastIndex = 0;
@@ -146,7 +181,7 @@
         if (secret) { snippet += ' · secret: ' + secret; reported[secret] = true; }
         var finding = {
           type: MSG_TYPE, key: key, provider: pat.id, source: source,
-          snippet: snippet, secret: secret,
+          snippet: pfx + snippet, secret: secret,
           mapsContext: pat.id === 'google' && hasMapsCtx(snippet + ' ' + (url || ''))
         };
         dbg(LOG + 'FOUND key [' + pat.id + '] via ' + source, key.slice(0, 14) + '…', url || '');
@@ -154,30 +189,30 @@
         queue.push(finding);
       }
     }
-    scanGeneric(text, source, url);
+    scanGeneric(text, source, url, pfx);
   }
 
   // Emit 'unknown' findings for credentials we have no dedicated pattern for.
-  function emitGeneric(key, reason, snippet, source, url) {
+  function emitGeneric(key, reason, snippet, source, url, pfx) {
     if (reported[key]) return;
     reported[key] = true;
     var finding = {
       type: MSG_TYPE, key: key, provider: 'unknown', source: source,
-      snippet: reason + ' — ' + snippet, secret: null, reason: reason, mapsContext: false
+      snippet: (pfx || '') + reason + ' — ' + snippet, secret: null, reason: reason, mapsContext: false
     };
     dbg(LOG + 'FOUND unknown [' + reason + '] via ' + source, key.slice(0, 14) + '…', url || '');
     try { window.postMessage(finding, '*'); } catch (ignore) {}
     queue.push(finding);
   }
 
-  function scanGeneric(text, source, url) {
+  function scanGeneric(text, source, url, pfx) {
     for (var i = 0; i < GENERIC_TOKEN_PATTERNS.length; i++) {
       var pat = GENERIC_TOKEN_PATTERNS[i];
       pat.re.lastIndex = 0;
       var m;
       while ((m = pat.re.exec(text)) !== null) {
         if (reported[m[0]]) continue;
-        emitGeneric(m[0], pat.label, genericSnippet(text, m.index, m[0].length), source, url);
+        emitGeneric(m[0], pat.label, genericSnippet(text, m.index, m[0].length), source, url, pfx);
       }
     }
     GENERIC_ASSIGN_RE.lastIndex = 0;
@@ -186,7 +221,7 @@
       var kw = a[1], val = a[2];
       if (reported[val] || !looksSecret(val)) continue;
       var idx = a.index + a[0].lastIndexOf(val);
-      emitGeneric(val, 'secret-like value assigned to "' + kw + '"', genericSnippet(text, idx, val.length), source, url);
+      emitGeneric(val, 'secret-like value assigned to "' + kw + '"', genericSnippet(text, idx, val.length), source, url, pfx);
     }
   }
 

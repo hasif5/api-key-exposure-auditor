@@ -87,6 +87,7 @@ Detection runs across every surface a key can hide in:
 | **Runtime globals** | The page's own `window.*` properties (e.g. `window.ENV`, injected config) scanned in the MAIN world |
 | **`<template>` contents** | Inert template fragments that never appear in the serialized DOM |
 | **Page URL** | The current URL's query string and `#fragment` (catches OAuth-style tokens) |
+| **Decode-and-rescan** | Base64 / base64url blobs and percent-encoded text are decoded and re-scanned, so keys nested inside encoded config or JWT-style payloads are caught |
 | **Network traffic** | Live interception of `fetch()`, `XMLHttpRequest`, `WebSocket`, `EventSource`, and `sendBeacon` request/response bodies, headers, and URLs |
 | **webRequest headers** | `key=` params, `X-Goog-Api-Key`, `Authorization: Bearer`, `x-api-key` |
 | **Response headers & cookies** | Top-level response header values and the origin's cookies are scanned for keys |
