@@ -622,6 +622,8 @@ const unknownList = document.getElementById('unknownList');
 const unknownEmpty = document.getElementById('unknownEmpty');
 const unknownStats = document.getElementById('unknownStats');
 const unknownCountEl = document.getElementById('unknownCount');
+const ukCollapsedGroups = new Set(); // domains collapsed in the unknown tab
+const ukRefOpen = new Set();         // finding ids whose code reference is expanded
 
 tabBtns.forEach((btn) => {
   btn.addEventListener('click', () => {
@@ -641,20 +643,34 @@ function splitReason(snippet) {
   return { reason: s.slice(0, i), ref: s.slice(i + 3) };
 }
 
-function buildUnknownCard(f) {
-  const { reason, ref } = splitReason(f.snippet);
-  const card = document.createElement('div');
-  card.className = 'uk-card';
+// A short "type" label from the match reason (the long "assigned to" form is
+// trimmed to just the field name).
+function ukTypeLabel(reason) {
+  if (!reason) return 'match';
+  const m = /^secret-like value assigned to "(.+)"$/.exec(reason);
+  return m ? 'assigned: ' + m[1] : reason;
+}
 
-  const top = document.createElement('div');
-  top.className = 'uk-top';
-  top.appendChild(providerBadge('unknown'));
+// One compact row: type · key · sources · toggleable code reference.
+function buildUnknownRow(f) {
+  const { reason, ref } = splitReason(f.snippet);
+  const row = document.createElement('div');
+  row.className = 'uk-row';
+
+  const head = document.createElement('div');
+  head.className = 'uk-rowhead';
+
+  const type = document.createElement('span');
+  type.className = 'uk-type';
+  type.textContent = ukTypeLabel(reason);
+  type.title = reason || '';
+  head.appendChild(type);
 
   const keyEl = document.createElement('span');
   keyEl.className = 'uk-key mono';
-  keyEl.textContent = f.key.length > 60 ? f.key.slice(0, 60) + '…' : f.key;
+  keyEl.textContent = f.key.length > 44 ? f.key.slice(0, 44) + '…' : f.key;
   keyEl.title = f.key;
-  top.appendChild(keyEl);
+  head.appendChild(keyEl);
 
   const copyBtn = document.createElement('button');
   copyBtn.className = 'btn ghost small';
@@ -664,66 +680,142 @@ function buildUnknownCard(f) {
     copyBtn.textContent = 'copied';
     setTimeout(() => (copyBtn.textContent = 'copy'), 1200);
   });
-  top.appendChild(copyBtn);
+  head.appendChild(copyBtn);
 
   (f.sources || []).forEach((s) => {
     const t = document.createElement('span');
     t.className = 'tag src-' + s;
     t.textContent = s;
-    top.appendChild(t);
+    head.appendChild(t);
   });
+
+  const spacer = document.createElement('span');
+  spacer.className = 'uk-spacer';
+  head.appendChild(spacer);
+
+  const open = ukRefOpen.has(f.id);
+  let body = null;
+  if (ref || (f.pageUrls || []).length) {
+    const refBtn = document.createElement('button');
+    refBtn.className = 'btn ghost small';
+    refBtn.textContent = open ? 'hide ref ▾' : 'reference ▸';
+    refBtn.addEventListener('click', () => {
+      if (ukRefOpen.has(f.id)) ukRefOpen.delete(f.id); else ukRefOpen.add(f.id);
+      renderUnknownCurrent();
+    });
+    head.appendChild(refBtn);
+  }
 
   const delBtn = document.createElement('button');
-  delBtn.className = 'btn danger small uk-del';
+  delBtn.className = 'btn danger small';
   delBtn.textContent = 'Delete';
-  delBtn.addEventListener('click', async () => {
-    await deleteFinding(f.id);
-    render();
-  });
-  top.appendChild(delBtn);
-  card.appendChild(top);
+  delBtn.addEventListener('click', async () => { await deleteFinding(f.id); render(); });
+  head.appendChild(delBtn);
 
-  if (reason) {
-    const why = document.createElement('div');
-    why.className = 'uk-why';
-    why.textContent = reason;
-    card.appendChild(why);
+  row.appendChild(head);
+
+  if (open) {
+    body = document.createElement('div');
+    body.className = 'uk-rowbody';
+    const links = sourceLinksEl(f);
+    if (links) body.appendChild(links);
+    if (ref) {
+      const pre = document.createElement('pre');
+      pre.className = 'uk-ref';
+      pre.textContent = ref;
+      body.appendChild(pre);
+    }
+    row.appendChild(body);
   }
+  return row;
+}
 
-  const origins = (f.origins || []);
-  const meta = document.createElement('div');
-  meta.className = 'uk-meta';
-  meta.innerHTML =
-    '<span class="uk-origin">' + (origins.length ? origins.map(esc).join(', ') : '—') + '</span>' +
-    '<span class="uk-time">first ' + esc(fmtTime(f.firstSeen)) + ' · last ' + esc(fmtTime(f.lastSeen)) + '</span>';
-  card.appendChild(meta);
-
-  const links = sourceLinksEl(f);
-  if (links) card.appendChild(links);
-
-  if (ref) {
-    const lbl = document.createElement('div');
-    lbl.className = 'uk-ref-label';
-    lbl.textContent = 'code reference';
-    card.appendChild(lbl);
-    const pre = document.createElement('pre');
-    pre.className = 'uk-ref';
-    pre.textContent = ref;
-    card.appendChild(pre);
-  }
-  return card;
+// Re-render the unknown tab from the last-known data without a full dashboard
+// rebuild (used by in-tab toggles so the page doesn't jump).
+let lastUnknown = [];
+function renderUnknownCurrent() {
+  const q = (els.filter.value || '').toLowerCase().trim();
+  const matchesQuery = (f) => !q || f.key.toLowerCase().includes(q) ||
+    (f.origins || []).some((o) => o.toLowerCase().includes(q));
+  renderUnknown(lastUnknown, matchesQuery);
 }
 
 function renderUnknown(unknown, matchesQuery) {
+  lastUnknown = unknown;
   if (unknownCountEl) unknownCountEl.textContent = unknown.length ? String(unknown.length) : '';
   if (!unknownList) return;
-  const items = unknown.filter(matchesQuery)
-    .sort((a, b) => (new Date(b.lastSeen) - new Date(a.lastSeen)) || a.key.localeCompare(b.key));
-  unknownStats.innerHTML = '<div class="stat"><div class="n">' + unknown.length +
-    '</div><div class="l">heuristic matches</div></div>';
+  const items = unknown.filter(matchesQuery);
+
+  // Group by domain (most matches first) — third-party scripts cluster here.
+  const groups = new Map();
+  items.forEach((f) => {
+    const d = groupDomainOf(f);
+    if (!groups.has(d)) groups.set(d, []);
+    groups.get(d).push(f);
+  });
+  const groupArr = Array.from(groups.entries())
+    .sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]));
+
+  unknownStats.innerHTML =
+    '<div class="stat"><div class="n">' + items.length + '</div><div class="l">matches</div></div>' +
+    '<div class="stat"><div class="n">' + groupArr.length + '</div><div class="l">sites</div></div>';
+
   unknownList.innerHTML = '';
   unknownEmpty.style.display = items.length ? 'none' : 'block';
-  items.forEach((f) => unknownList.appendChild(buildUnknownCard(f)));
+
+  groupArr.forEach(([domain, list]) => {
+    list.sort((a, b) => (new Date(b.lastSeen) - new Date(a.lastSeen)) || a.key.localeCompare(b.key));
+    const collapsed = ukCollapsedGroups.has(domain);
+
+    const group = document.createElement('div');
+    group.className = 'uk-group';
+
+    const hdr = document.createElement('div');
+    hdr.className = 'uk-group-hdr';
+    const left = document.createElement('div');
+    left.className = 'uk-group-left';
+    left.innerHTML = '<span class="gh-toggle">' + (collapsed ? '▶' : '▼') + '</span>' +
+      '<span class="uk-group-domain">' + esc(domain) + '</span>' +
+      '<span class="uk-group-count">' + list.length + '</span>';
+    hdr.appendChild(left);
+
+    const right = document.createElement('div');
+    right.className = 'uk-group-right';
+    if (domain && domain !== 'unknown') {
+      const ignoreBtn = document.createElement('button');
+      ignoreBtn.className = 'btn ghost small';
+      ignoreBtn.textContent = '🚫 Ignore site';
+      ignoreBtn.title = 'Stop scanning ' + domain + ' and remove its findings';
+      ignoreBtn.addEventListener('click', (e) => { e.stopPropagation(); ignoreDomain(domain); });
+      right.appendChild(ignoreBtn);
+    }
+    const delAll = document.createElement('button');
+    delAll.className = 'btn danger small';
+    delAll.textContent = 'Delete ' + list.length;
+    delAll.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      if (!window.confirm('Delete all ' + list.length + ' heuristic matches from ' + domain + '?')) return;
+      for (const f of list) await deleteFinding(f.id);
+      render();
+    });
+    right.appendChild(delAll);
+    hdr.appendChild(right);
+
+    hdr.addEventListener('click', () => {
+      if (ukCollapsedGroups.has(domain)) ukCollapsedGroups.delete(domain);
+      else ukCollapsedGroups.add(domain);
+      renderUnknownCurrent();
+    });
+    group.appendChild(hdr);
+
+    if (!collapsed) {
+      const bodyWrap = document.createElement('div');
+      bodyWrap.className = 'uk-group-body';
+      list.forEach((f) => bodyWrap.appendChild(buildUnknownRow(f)));
+      group.appendChild(bodyWrap);
+    }
+    unknownList.appendChild(group);
+  });
 }
 
 // How many keys to audit at once. Each key itself fans out to ~14 probes

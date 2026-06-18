@@ -306,22 +306,39 @@ tr.row-high td { background: #1d1611; }
 /* Unknown / heuristic tab */
 .btn.small { padding: 4px 8px; font-size: 11px; }
 .unknown-main { padding: 0 20px 40px; }
-.uk-card {
+
+/* Domain groups */
+.uk-group {
   background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
-  padding: 10px 14px; margin-bottom: 10px;
+  margin-bottom: 8px; overflow: hidden;
 }
-.uk-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.uk-key { font-size: 12px; word-break: break-all; color: var(--txt); }
-.uk-del { margin-left: auto; }
-.uk-why { font-size: 12px; font-weight: 600; color: #d9b98a; margin: 6px 0 2px; }
-.uk-meta { display: flex; gap: 12px; flex-wrap: wrap; font-size: 11px; color: var(--muted); margin: 2px 0 6px; }
-.uk-origin { color: var(--accent); word-break: break-all; }
-.uk-ref-label {
-  font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em;
-  color: var(--muted); margin-bottom: 3px;
+.uk-group-hdr {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 8px 12px; cursor: pointer; user-select: none;
 }
+.uk-group-hdr:hover { background: #191f25; }
+.uk-group-left { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.uk-group-domain { font-weight: 700; color: var(--accent); word-break: break-all; }
+.uk-group-count {
+  font-size: 11px; font-weight: 700; color: #c9b08a; background: #2b2b2b;
+  border: 1px solid #4d4636; border-radius: 10px; padding: 1px 8px;
+}
+.uk-group-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.uk-group-body { border-top: 1px solid var(--border); }
+
+/* Compact rows */
+.uk-row { padding: 6px 12px; border-bottom: 1px solid #161b21; }
+.uk-row:last-child { border-bottom: none; }
+.uk-rowhead { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.uk-spacer { flex: 1 1 auto; }
+.uk-type {
+  font-size: 10.5px; font-weight: 600; color: #d9b98a; background: #2a2419;
+  border: 1px solid #4d4636; border-radius: 5px; padding: 1px 6px; white-space: nowrap;
+}
+.uk-key { font-family: ui-monospace, Consolas, monospace; font-size: 12px; word-break: break-all; color: var(--txt); }
+.uk-rowbody { margin-top: 6px; }
 .uk-ref {
-  margin: 0; padding: 8px 10px; background: #11151a; border: 1px solid var(--border);
+  margin: 4px 0 2px; padding: 8px 10px; background: #11151a; border: 1px solid var(--border);
   border-radius: 6px; font-family: ui-monospace, Consolas, monospace; font-size: 11.5px;
   color: #cdd6e0; white-space: pre-wrap; word-break: break-all; max-height: 180px; overflow: auto;
 }
