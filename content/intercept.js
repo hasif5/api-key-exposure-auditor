@@ -139,15 +139,16 @@
   }
   function decodeLayers(text) {
     var layers = [];
+    if (text.length > 2000000) return layers;
     if (text.length < 100000 && text.indexOf('%') !== -1) {
       try { var u = decodeURIComponent(text); if (u !== text) layers.push(u); } catch (e) { /* malformed */ }
     }
     B64_BLOB_RE.lastIndex = 0;
     var m, examined = 0, decoded = 0;
-    while ((m = B64_BLOB_RE.exec(text)) !== null && examined < 600 && decoded < 25) {
+    while ((m = B64_BLOB_RE.exec(text)) !== null && examined < 256 && decoded < 12) {
       examined++;
       var d = b64decode(m[0]);
-      if (d) { layers.push(d.length > 100000 ? d.slice(0, 100000) : d); decoded++; }
+      if (d) { layers.push(d.length > 65536 ? d.slice(0, 65536) : d); decoded++; }
     }
     return layers;
   }
@@ -458,7 +459,7 @@
   // see it. Object.keys(window) is just the page's own globals (plus id'd
   // elements), not the WebIDL built-ins, so this stays cheap. Found keys ride
   // the same postMessage bridge as network findings.
-  var MAX_GLOBAL = 512 * 1024; // cap serialized size per global object
+  var MAX_GLOBAL = 256 * 1024; // cap serialized size per global object
 
   // JSON.stringify with an early bail-out: throws once accumulated string
   // content exceeds MAX_GLOBAL, so a giant in-memory store can't stall the page.
@@ -476,7 +477,7 @@
   function scanGlobals() {
     try {
       var keys = Object.keys(window);
-      var cap = Math.min(keys.length, 2000);
+      var cap = Math.min(keys.length, 800);
       for (var i = 0; i < cap; i++) {
         var k = keys[i], v;
         try { v = window[k]; } catch (e) { continue; }

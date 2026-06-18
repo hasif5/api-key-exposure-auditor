@@ -205,7 +205,7 @@
   // Both are partitioned by origin and reachable from the isolated world. Bound
   // the work hard so a large store can't stall the page.
 
-  var STORE_BUDGET = 2 * 1024 * 1024; // max serialized text scanned per store type
+  var STORE_BUDGET = 1024 * 1024; // max serialized text scanned per store type
   var storesScanned = false;
 
   function idbRequest(req) {
@@ -220,7 +220,7 @@
     var infos;
     try { infos = await indexedDB.databases(); } catch (e) { return; }
     var budget = STORE_BUDGET;
-    for (var d = 0; d < infos.length && d < 25 && budget > 0; d++) {
+    for (var d = 0; d < infos.length && d < 15 && budget > 0; d++) {
       var name = infos[d] && infos[d].name;
       if (!name) continue;
       var db;
@@ -230,7 +230,7 @@
         for (var s = 0; s < stores.length && budget > 0; s++) {
           try {
             var store = db.transaction(stores[s], 'readonly').objectStore(stores[s]);
-            var rows = await idbRequest(store.getAll(undefined, 500));
+            var rows = await idbRequest(store.getAll(undefined, 200));
             for (var r = 0; r < rows.length && budget > 0; r++) {
               var txt;
               try { txt = typeof rows[r] === 'string' ? rows[r] : JSON.stringify(rows[r]); }
@@ -256,7 +256,7 @@
       try { cache = await caches.open(names[n]); } catch (e) { continue; }
       var reqs;
       try { reqs = await cache.keys(); } catch (e) { continue; }
-      for (var i = 0; i < reqs.length && i < 100 && budget > 0; i++) {
+      for (var i = 0; i < reqs.length && i < 50 && budget > 0; i++) {
         try {
           GAKS.findInText(reqs[i].url).forEach(function (f) { f.source = 'cache'; sink.push(f); });
           var res = await cache.match(reqs[i]);

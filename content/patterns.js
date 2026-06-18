@@ -199,15 +199,16 @@ var GAKS = (function () {
   }
   function decodeLayers(text) {
     var layers = [];
+    if (text.length > 2000000) return layers;
     if (text.length < 100000 && text.indexOf('%') !== -1) {
       try { var u = decodeURIComponent(text); if (u !== text) layers.push(u); } catch (e) { /* malformed */ }
     }
     B64_BLOB_RE.lastIndex = 0;
     var m, examined = 0, decoded = 0;
-    while ((m = B64_BLOB_RE.exec(text)) !== null && examined < 600 && decoded < 25) {
+    while ((m = B64_BLOB_RE.exec(text)) !== null && examined < 256 && decoded < 12) {
       examined++;
       var d = b64decode(m[0]);
-      if (d) { layers.push(d.length > 100000 ? d.slice(0, 100000) : d); decoded++; }
+      if (d) { layers.push(d.length > 65536 ? d.slice(0, 65536) : d); decoded++; }
     }
     return layers;
   }
