@@ -37,11 +37,13 @@ function pageIgnored(urlOrOrigin) {
 const KEY_RE = /^(?:AIza[0-9A-Za-z_-]{35}|AQ\.[A-Za-z0-9_-]{40,})$/;
 const MAPS_HINTS = ['maps.googleapis.com', 'maps.google.com', 'maps.gstatic.com', '/maps/'];
 
-// Deep resource-scanning limits (keep it bounded but go deep).
+// Deep resource-scanning limits (keep it bounded but go deep). Peak service-
+// worker memory is roughly SCRIPT_CONCURRENCY × MAX_SCRIPT_BYTES of text held
+// at once, so these are kept lean (≈16 MB) — most bundles are well under 4 MB.
 const SCRIPT_FETCH_TIMEOUT = 12000;
-const MAX_SCRIPT_BYTES = 8 * 1024 * 1024; // scan at most 8 MB per resource
+const MAX_SCRIPT_BYTES = 4 * 1024 * 1024; // scan at most 4 MB per resource
 const MAX_SCRIPT_CACHE = 8000;            // distinct URLs remembered
-const SCRIPT_CONCURRENCY = 6;
+const SCRIPT_CONCURRENCY = 4;
 const MAX_DEPTH = 3;                       // page → bundle → chunk/source-map → …
 const DERIVED_PER_RESOURCE = 30;           // referenced assets followed per file
 const fetchedScripts = new Set();

@@ -72,8 +72,8 @@ content.js  ──GAKS_FINDINGS / GAKS_SCRIPTS──▶  background.js (service 
 ### Key modules
 
 - **`background.js`** — the orchestrator. Owns: webRequest sniffing, the bounded
-  recursive asset-crawl queue (`MAX_DEPTH = 3`, `SCRIPT_CONCURRENCY = 6`,
-  `MAX_SCRIPT_BYTES = 8 MB`), source-map following (`scanSourceMap` /
+  recursive asset-crawl queue (`MAX_DEPTH = 3`, `SCRIPT_CONCURRENCY = 4`,
+  `MAX_SCRIPT_BYTES = 4 MB`), source-map following (`scanSourceMap` /
   `followReferences`), common-config-path probing, per-tab badge counts, and the
   `chrome.runtime.onMessage` router (`GAKS_FINDINGS`, `GAKS_SCRIPTS`, `GAKS_AUDIT`,
   `GAKS_AUDIT_RAW`, `GAKS_GET_TAB_KEYS`, `GAKS_GET_DB`).
