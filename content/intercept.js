@@ -390,6 +390,11 @@
               }
             }
           } catch (ignore) {}
+          // Native send() on a CLOSING/CLOSED socket just logs a console warning
+          // ("WebSocket is already in CLOSING or CLOSED state.") and drops the
+          // data. Replicate the silent drop without forwarding, so our wrapper
+          // doesn't trigger that warning on the page's behalf.
+          if (ws.readyState === _WS.CLOSING || ws.readyState === _WS.CLOSED) return;
           try { return origSend.call(ws, data); } catch (e) {
             if (ws.readyState !== _WS.OPEN) return;
             throw e;
