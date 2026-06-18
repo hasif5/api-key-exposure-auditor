@@ -161,6 +161,7 @@ tbody tr:hover:not(.group-header):not(.detail-row) { background: #191f25; }
 .prov-xai { background: #23262b; color: #cdd3db; border: 1px solid #3c424b; }
 .prov-twilio { background: #3a1518; color: #ff8088; border: 1px solid #6b2630; }
 .prov-aws { background: #3a2a0d; color: #ff9d3c; border: 1px solid #6b4a18; }
+.prov-github { background: #1c2128; color: #d0d7de; border: 1px solid #444c56; }
 .prov-unknown { background: #2b2b2b; color: #c9b08a; border: 1px solid #4d4636; }
 .copy-btn {
   background: var(--panel2); color: var(--txt); border: 1px solid var(--border);
