@@ -3,6 +3,10 @@ gaks-findings-*.json
 gaks-findings-*.csv
 *.findings.json
 
+# ---- Local test harness (synthetic key fixtures trip secret scanners; kept
+#      local-only so it never lands in the repo or release artifacts) ----
+test/
+
 # ---- Dependencies ----
 node_modules/
 jspm_packages/

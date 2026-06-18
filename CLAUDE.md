@@ -14,7 +14,9 @@ leaked keys. The active audit makes live requests to provider APIs.
 ## Commands
 
 ```bash
-# Run the full logic regression suite (detection / providers / store / ignore / parity)
+# Run the full logic regression suite (detection / providers / store / ignore / parity).
+# NOTE: test/ is intentionally git-ignored and NOT in the repo or CI — its synthetic
+# key fixtures trip secret scanners. Keep it local-only; run it before committing.
 node test/detection.test.mjs
 
 # Syntax-check before committing (mirrors the CI release workflow)
@@ -29,7 +31,8 @@ node --input-type=module --check < lib/audit.js              # ES modules (lib/*
 There is no test runner/framework — `test/detection.test.mjs` is a self-contained
 Node script that mocks `chrome.storage` and imports the `lib/` modules directly.
 It has no single-test filter; edit/comment sections to narrow. Add cases here when
-you change detection or provider logic — CI runs this file on every `v*` tag push.
+you change detection or provider logic, and run it locally — it is git-ignored
+(not committed, not run in CI), so it can't gate releases automatically.
 
 To run the extension: load the repo folder unpacked via `chrome://extensions` →
 Developer mode → **Load unpacked**. Reload from that page to pick up changes. Use

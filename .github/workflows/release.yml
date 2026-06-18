@@ -36,9 +36,6 @@ jobs:
             node --input-type=module --check < "$f"
           done
 
-      - name: Run logic regression tests
-        run: node test/detection.test.mjs
-
       - name: Build store zip
         run: bash build.sh
 
