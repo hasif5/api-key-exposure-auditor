@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "API Key Exposure Auditor",
-  "version": "1.11.0",
+  "version": "1.12.0",
   "description": "Finds API keys leaked in your own web projects and audits their access and billing exposure. Self-project security.",
   "homepage_url": "https://github.com/hasif5/api-key-exposure-auditor",
   "minimum_chrome_version": "111",
