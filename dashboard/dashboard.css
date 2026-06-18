@@ -225,6 +225,7 @@ tbody tr:hover:not(.group-header):not(.detail-row) { background: #191f25; }
 .tag.src-header { color: #ffb37e; }
 .tag.src-cookie { color: #e7a3d0; }
 .tag.src-window { color: #ffe08a; }
+.tag.src-shadow { color: #c7a6ff; }
 .tag.src-indexeddb { color: #8ad0ff; }
 .tag.src-cache { color: #a8e6cf; }
 .tag.src-url { color: #d0b0ff; }

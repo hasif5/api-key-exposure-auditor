@@ -494,7 +494,30 @@
         }
       }
     } catch (e) { /* ignore */ }
+    // window.name persists across navigations and history.state rides SPA route
+    // changes — both are common stashes the DOM scan never sees.
+    try { if (window.name && window.name.length > 8) scanText(String(window.name), 'window-global', location.href); } catch (e) { /* ignore */ }
+    try { if (history && history.state != null) { var hs = boundedStringify(history.state); if (hs && hs.length > 8) scanText(hs, 'window-global', location.href); } } catch (e) { /* ignore */ }
   }
+
+  // ---- Capture closed shadow roots ------------------------------------------
+  // Closed shadow DOM is invisible to the content script's querySelectorAll, so
+  // hook attachShadow at document_start to keep a reference and scan its markup.
+  try {
+    var _attachShadow = Element.prototype.attachShadow;
+    var _shadowRoots = [];
+    Element.prototype.attachShadow = function () {
+      var root = _attachShadow.apply(this, arguments);
+      try { if (_shadowRoots.length < 500) _shadowRoots.push(root); } catch (e) { /* ignore */ }
+      return root;
+    };
+    var scanShadowRoots = function () {
+      for (var i = 0; i < _shadowRoots.length; i++) {
+        try { var html = _shadowRoots[i].innerHTML; if (html) scanText(html, 'shadow', location.href); } catch (e) { /* ignore */ }
+      }
+    };
+    if (typeof document !== 'undefined') { setTimeout(scanShadowRoots, 3000); setTimeout(scanShadowRoots, 6500); }
+  } catch (ignore) {}
 
   try {
     // Guard on `document` so the headless test sandbox never schedules timers.

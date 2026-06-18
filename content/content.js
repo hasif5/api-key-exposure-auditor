@@ -297,9 +297,11 @@
       var netKey = 'net:' + key + ':' + (d.source || '');
       if (reported[netKey]) return;
       reported[netKey] = true;
-      // window.* globals come from the MAIN-world interceptor; everything else
-      // it sends is request/response traffic.
-      var fSource = (d.source && d.source.indexOf('window') === 0) ? 'window' : 'network';
+      // Map the interceptor's fine-grained source to a stored source tag.
+      // window.* globals / history.state → 'window'; closed shadow roots →
+      // 'shadow'; everything else it sends is request/response traffic.
+      var fSource = (d.source && d.source.indexOf('window') === 0) ? 'window'
+        : (d.source === 'shadow' ? 'shadow' : 'network');
       if (!reported[key]) {
         reported[key] = { source: fSource, snippet: d.snippet, mapsContext: !!d.mapsContext };
       }
