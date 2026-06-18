@@ -162,6 +162,9 @@ tbody tr:hover:not(.group-header):not(.detail-row) { background: #191f25; }
 .prov-twilio { background: #3a1518; color: #ff8088; border: 1px solid #6b2630; }
 .prov-aws { background: #3a2a0d; color: #ff9d3c; border: 1px solid #6b4a18; }
 .prov-github { background: #1c2128; color: #d0d7de; border: 1px solid #444c56; }
+.prov-gitlab { background: #2b1a10; color: #fc9c6b; border: 1px solid #5a3415; }
+.prov-slack { background: #2a1f33; color: #d8a7e8; border: 1px solid #50386a; }
+.prov-stripe { background: #1a2540; color: #9db8ff; border: 1px solid #36508c; }
 .prov-unknown { background: #2b2b2b; color: #c9b08a; border: 1px solid #4d4636; }
 .copy-btn {
   background: var(--panel2); color: var(--txt); border: 1px solid var(--border);

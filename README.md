@@ -67,7 +67,10 @@ The toolbar badge shows the number of distinct keys found on the active tab. Cli
 | **Twilio** | `AC...` SID + 32-hex Auth Token | Account validation via Basic Auth |
 | **AWS** | `AKIA...`/`ASIA...` Access Key ID + 40-char Secret Access Key | Pair validated via SigV4 `sts:GetCallerIdentity` (free, read-only) |
 | **GitHub** | `ghp_`/`gho_`/`ghu_`/`ghs_`/`ghr_` + `github_pat_...` (classic/OAuth/fine-grained) | Validated via free `GET /user`; a valid token is critical (repo/account access, no IP lock) |
-| **Unknown** (heuristic) | Other vendor token shapes (GitLab, Slack, Stripe, SendGrid, npm, Shopify, Mailgun, HuggingFace, Replicate, Groq, DigitalOcean, Notion, Linear, Telegram, Discord, Sentry DSN, Mailchimp, JWT…), **connection strings with embedded credentials** (`postgres://`, `mongodb+srv://`, `redis://`…), **full private-key blocks** (incl. GCP service-account keys), and high-entropy `secret`/`token`/`apiKey` assignments | Not auto-validated — flagged for manual review with where/how context |
+| **GitLab** | `glpat-...` | Validated via free `GET /api/v4/user` |
+| **Slack** | `xoxb-`/`xoxp-`/`xoxa-`/`xoxr-`/`xoxs-...` | Validated via free `auth.test` (team/user) |
+| **Stripe** | `sk_live_`/`sk_test_`/`rk_live_`/`rk_test_...` | Validated via `GET /v1/account` (live keys flagged distinctly) |
+| **Unknown** (heuristic) | Other vendor token shapes (SendGrid, npm, Shopify, Mailgun, HuggingFace, Replicate, Groq, DigitalOcean, Notion, Linear, Telegram, Discord, Sentry DSN, Mailchimp, Slack webhooks, JWT…), **connection strings with embedded credentials** (`postgres://`, `mongodb+srv://`, `redis://`…), **full private-key blocks** (incl. GCP service-account keys), and high-entropy `secret`/`token`/`apiKey` assignments | Not auto-validated — flagged for manual review with where/how context |
 
 Bearer-token providers (OpenAI, Anthropic, OpenRouter, xAI) have no IP/referrer restriction mechanism -- any valid key is unconditionally **critical**. **Unknown** findings are heuristic "looks-like-a-secret" matches with no dedicated auditor; each records what pattern matched and which surface it came from.
 

@@ -40,7 +40,7 @@ const CLASS_HELP = {
   'error': 'Network/transport error reaching the endpoint'
 };
 
-const PROVIDER_LABELS = { google: 'Google', openai: 'OpenAI', anthropic: 'Anthropic', openrouter: 'OpenRouter', xai: 'xAI', twilio: 'Twilio', aws: 'AWS', github: 'GitHub', unknown: 'Unknown' };
+const PROVIDER_LABELS = { google: 'Google', openai: 'OpenAI', anthropic: 'Anthropic', openrouter: 'OpenRouter', xai: 'xAI', twilio: 'Twilio', aws: 'AWS', github: 'GitHub', gitlab: 'GitLab', slack: 'Slack', stripe: 'Stripe', unknown: 'Unknown' };
 function providerBadge(id) {
   id = id || 'google';
   const span = document.createElement('span');
