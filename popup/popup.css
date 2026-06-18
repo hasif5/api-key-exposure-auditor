@@ -138,6 +138,13 @@ body {
 }
 .src-links a:hover { text-decoration: underline; }
 
+.unknown-hint {
+  display: block; width: 100%; margin: 6px 0 2px; padding: 6px 8px;
+  background: none; border: 1px dashed var(--border); border-radius: 6px;
+  color: var(--muted); font-size: 11px; cursor: pointer; text-align: center;
+}
+.unknown-hint:hover { color: var(--txt); border-color: var(--accent); }
+
 .btn {
   background: var(--accent);
   color: #05203f;

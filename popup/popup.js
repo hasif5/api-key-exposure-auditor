@@ -359,8 +359,12 @@ async function render() {
   // Fall back to an exact-origin match so nothing is missed if the tab-key
   // map was lost (e.g. right after the worker restarted).
   const tabKeySet = await getTabKeys();
-  const items = db.findings.filter((f) =>
+  const onTab = db.findings.filter((f) =>
     tabKeySet.has(f.key) || (origin && (f.origins || []).includes(origin)));
+  // Heuristic 'unknown' matches are noisy (JWTs, hashes, …) — keep the popup to
+  // real, auditable provider keys. They remain available in the dashboard.
+  const items = onTab.filter((f) => f.provider !== 'unknown');
+  const hiddenUnknown = onTab.length - items.length;
   els.list.innerHTML = '';
   if (!items.length) {
     const p = document.createElement('p');
@@ -375,6 +379,14 @@ async function render() {
         (rank[assessRisk(a.audits, a.provider).level] - rank[assessRisk(b.audits, b.provider).level]) ||
         (b.mapsContext - a.mapsContext) || a.key.localeCompare(b.key))
       .forEach((f) => els.list.appendChild(renderFinding(f, collapsible)));
+  }
+  if (hiddenUnknown > 0) {
+    const note = document.createElement('button');
+    note.className = 'unknown-hint';
+    note.textContent = '+ ' + hiddenUnknown + ' heuristic match' + (hiddenUnknown === 1 ? '' : 'es') +
+      ' (view in dashboard →)';
+    note.addEventListener('click', openDashboard);
+    els.list.appendChild(note);
   }
   els.count.textContent = items.length + (items.length === 1 ? ' key' : ' keys');
 }
