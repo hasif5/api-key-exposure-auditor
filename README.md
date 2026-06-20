@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="images/image1.png" alt="API Key Exposure Auditor -- browser extension for auditing exposed API keys in frontend apps" width="820" />
+</p>
+
 # API Key Exposure Auditor
 
 [![CI](https://github.com/hasif5/api-key-exposure-auditor/actions/workflows/release.yml/badge.svg)](https://github.com/hasif5/api-key-exposure-auditor/actions/workflows/release.yml)
