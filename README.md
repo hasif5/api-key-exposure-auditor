@@ -14,7 +14,7 @@
 
 Point it at your own site, app, or localhost and it passively detects leaked credentials across the DOM, JavaScript bundles, source maps, network traffic, and more. Then audit each key in one click to see what it can reach and whether it's properly restricted.
 
-Supports **Google** (`AIza...` / `AQ....`), **OpenAI** (`sk-...`), **Anthropic** (`sk-ant-...`), **OpenRouter** (`sk-or-...`), **xAI** (`xai-...`), and **Twilio** (`AC...` + Auth Token). All data stays local, no backend, no telemetry.
+Live-validated providers: **Google**, **OpenAI**, **Anthropic**, **OpenRouter**, **xAI**, **Twilio**, **AWS**, **GitHub**, **GitLab**, **Slack**, and **Stripe**. On top of that it heuristically flags 20+ other token shapes (SendGrid, npm, Shopify, HuggingFace, Stripe webhook secrets, Discord/Telegram bots, JWTs…), connection strings with embedded credentials, and full private-key blocks. All data stays local, no backend, no telemetry.
 
 > If this tool helps you secure your projects, consider giving it a star -- it helps others find it.
 
@@ -84,14 +84,14 @@ Detection runs across every surface a key can hide in:
 
 | Surface | How |
 |---|---|
-| **DOM / inline scripts** | Full page HTML + open shadow-DOM markup |
+| **DOM / inline scripts** | Full page HTML + open **and closed** shadow-DOM markup |
 | **JavaScript bundles** | All `<script src>`, preloads, and modulepreloads are fetched and scanned |
 | **Source maps** | `sourceMappingURL` files are followed; original un-minified source is scanned |
 | **Recursive asset graph** | Referenced chunks, JSON, and CSS followed up to 3 levels deep (same-origin) |
 | **Common config paths** | `/.env`, `/config.json`, `/firebase-config.json`, plus exposed dumps (`/.git/config`, `/wp-config.php.bak`, `/actuator/env`, `/phpinfo.php`) probed once per origin |
 | **Web storage** | `localStorage` and `sessionStorage` |
 | **IndexedDB & Cache Storage** | The origin's IndexedDB object stores and Service Worker `caches` entries (bounded) |
-| **Runtime globals** | The page's own `window.*` properties (e.g. `window.ENV`, injected config) scanned in the MAIN world |
+| **Runtime globals** | The page's own `window.*` properties (e.g. `window.ENV`, injected config), `window.name`, and `history.state` scanned in the MAIN world |
 | **`<template>` contents** | Inert template fragments that never appear in the serialized DOM |
 | **Page URL** | The current URL's query string and `#fragment` (catches OAuth-style tokens) |
 | **Decode-and-rescan** | Base64 / base64url blobs and percent-encoded text are decoded and re-scanned, so keys nested inside encoded config or JWT-style payloads are caught |
