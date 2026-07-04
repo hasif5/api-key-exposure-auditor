@@ -34,11 +34,13 @@
   }
 
   function awsSecret(text, index, id) {
-    var slice = text.slice(Math.max(0, index - 500), Math.min(text.length, index + 500));
+    var slice = text.slice(Math.max(0, index - 1500), Math.min(text.length, index + 1500));
     var kw = /secret[_a-z]*["']?\s*[:=]\s*["']?([A-Za-z0-9/+=]{20,128})/i.exec(slice);
     if (kw && id.indexOf(kw[1]) === -1) return kw[1];
     var re = /(?<![A-Za-z0-9/+])[A-Za-z0-9/+]{40}(?![A-Za-z0-9/+])/g, m;
     while ((m = re.exec(slice)) !== null) { if (id.indexOf(m[0]) === -1) return m[0]; }
+    var far = /aws[_-]?secret[_a-z]*["']?\s*[:=]\s*["']?([A-Za-z0-9/+=]{20,128})/i.exec(text);
+    if (far && id.indexOf(far[1]) === -1) return far[1];
     return null;
   }
 
