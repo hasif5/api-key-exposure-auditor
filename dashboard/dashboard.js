@@ -87,6 +87,10 @@ function hideProgress() {
 
 let consented = false;
 const expanded = new Set();
+// >0 while any audit (single, per-domain, or all) is running. The storage-change
+// listener checks this to avoid re-rendering the whole table on every per-key
+// write during a batch; the audit flows update the UI themselves.
+let auditing = 0;
 
 function toast(msg) {
   els.toast.textContent = msg;
@@ -388,16 +392,21 @@ function buildRow(f) {
 
   auditBtn.addEventListener('click', async () => {
     auditBtn.disabled = true;
+    auditing++; // suppress storage-driven full re-renders; we repaint the row below
     showProgressIndeterminate('Auditing ' + f.key.slice(0, 14) + '…');
-    const updated = await runAudit(f.id, status);
-    hideProgress();
-    auditBtn.disabled = false;
-    if (updated) {
-      if (savedKeys.has(updated.key)) await saveToCollection(updated); // refresh saved snapshot
-      status.textContent = '';
-      // Update this row in place — no full re-render, so the table doesn't
-      // re-sort and the page doesn't jump/scroll to the top.
-      replaceRowInPlace(tr, updated);
+    try {
+      const updated = await runAudit(f.id, status);
+      if (updated) {
+        if (savedKeys.has(updated.key)) await saveToCollection(updated); // refresh saved snapshot
+        status.textContent = '';
+        // Update this row in place — no full re-render, so the table doesn't
+        // re-sort and the page doesn't jump/scroll to the top.
+        replaceRowInPlace(tr, updated);
+      }
+    } finally {
+      auditing--;
+      hideProgress();
+      auditBtn.disabled = false;
     }
   });
   detailBtn.addEventListener('click', () => {
@@ -489,7 +498,24 @@ const RISK_RANK = { critical: 0, high: 1, restricted: 2, unknown: 3 };
 
 let currentFindings = [];
 
+// Serialize renders: a full table rebuild is async (awaits storage), so two
+// overlapping calls would race — each clearing the table and restoring a stale
+// scroll position, which is what made the page jump up and down. Coalesce any
+// call that arrives mid-render into a single follow-up pass.
+let rendering = false;
+let renderQueued = false;
 async function render() {
+  if (rendering) { renderQueued = true; return; }
+  rendering = true;
+  try {
+    await doRender();
+  } finally {
+    rendering = false;
+    if (renderQueued) { renderQueued = false; render(); }
+  }
+}
+
+async function doRender() {
   const scrollY = window.scrollY; // preserve position across rebuilds
   const db = await getDb();
   const coll = await getCollection();
@@ -834,8 +860,12 @@ async function auditMany(findings, onProgress) {
   async function worker() {
     while (idx < findings.length) {
       const f = findings[idx++];
-      const updated = await runAudit(f.id, null);
-      if (updated && savedKeys.has(updated.key)) await saveToCollection(updated);
+      // One key's failure (audit error, storage hiccup) must not abort the whole
+      // batch — swallow per-key and keep going.
+      try {
+        const updated = await runAudit(f.id, null);
+        if (updated && savedKeys.has(updated.key)) await saveToCollection(updated);
+      } catch (e) { /* skip this key, continue the batch */ }
       done++;
       if (onProgress) onProgress(done, total);
     }
@@ -851,14 +881,21 @@ async function auditGroup(findings, btn) {
   const total = findings.length;
   const label = btn.textContent;
   btn.disabled = true;
+  auditing++;
   showProgressDeterminate(0, total, 'Auditing domain 0 / ' + total);
-  const done = await auditMany(findings, (d, t) => {
-    btn.textContent = 'Auditing ' + d + '/' + t + '…';
-    showProgressDeterminate(d, t, 'Audited ' + d + ' / ' + t);
-  });
-  hideProgress();
-  btn.disabled = false;
-  btn.textContent = label;
+  let done = 0;
+  try {
+    done = await auditMany(findings, (d, t) => {
+      btn.textContent = 'Auditing ' + d + '/' + t + '…';
+      showProgressDeterminate(d, t, 'Audited ' + d + ' / ' + t);
+    });
+  } finally {
+    // Always restore the UI, even if the batch threw unexpectedly.
+    auditing--;
+    hideProgress();
+    btn.disabled = false;
+    btn.textContent = label;
+  }
   render();
   toast('Audited ' + done + ' keys in this domain');
 }
@@ -962,14 +999,21 @@ document.getElementById('auditAllBtn').addEventListener('click', async () => {
   const queue = currentFindings.slice();
   const total = queue.length;
   btn.disabled = true;
+  auditing++;
   showProgressDeterminate(0, total, 'Auditing 0 / ' + total);
-  const done = await auditMany(queue, (d, t) => {
-    btn.textContent = 'Auditing ' + d + '/' + t + '…';
-    showProgressDeterminate(d, t, 'Audited ' + d + ' / ' + t);
-  });
-  hideProgress();
-  btn.disabled = false;
-  btn.textContent = 'Audit all';
+  let done = 0;
+  try {
+    done = await auditMany(queue, (d, t) => {
+      btn.textContent = 'Auditing ' + d + '/' + t + '…';
+      showProgressDeterminate(d, t, 'Audited ' + d + ' / ' + t);
+    });
+  } finally {
+    // Always restore the UI, even if the batch threw unexpectedly.
+    auditing--;
+    hideProgress();
+    btn.disabled = false;
+    btn.textContent = 'Audit all';
+  }
   render();
   toast('Audited ' + done + ' keys');
 });
@@ -995,9 +1039,21 @@ document.getElementById('ignoreSave').addEventListener('click', async () => {
   render();
 });
 
-// Re-render if storage changes while the dashboard is open.
+// Re-render if storage changes while the dashboard is open. A batch audit fires
+// one storage write per key (times every saved key), so re-rendering on each
+// would thrash the whole table dozens of times a second. Debounce, and skip
+// entirely while an audit is running — those flows repaint themselves when done.
+let autoRenderTimer = null;
+function scheduleAutoRender() {
+  clearTimeout(autoRenderTimer);
+  autoRenderTimer = setTimeout(() => {
+    autoRenderTimer = null;
+    if (auditing === 0) render();
+  }, 200);
+}
+
 chrome.storage.onChanged.addListener((changes, area) => {
-  if (area === 'local' && (changes.gaks_db || changes.gaks_collection)) render();
+  if (area === 'local' && (changes.gaks_db || changes.gaks_collection)) scheduleAutoRender();
 });
 
 loadIgnore();
