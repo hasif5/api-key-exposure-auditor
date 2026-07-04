@@ -92,6 +92,20 @@ const expanded = new Set();
 // write during a batch; the audit flows update the UI themselves.
 let auditing = 0;
 
+// Active summary-tile filter (null = show everything). Toggled by clicking a
+// stat tile, so "show me only the unrestricted keys" is one click.
+let activeStatFilter = null; // null | 'maps' | 'audited' | 'unrestricted' | 'billable'
+
+function matchesStatFilter(f) {
+  if (!activeStatFilter) return true;
+  if (activeStatFilter === 'maps') return !!f.mapsContext;
+  if (activeStatFilter === 'audited') return !!(f.audits && f.audits.length);
+  const r = assessRisk(f.audits, f.provider);
+  if (activeStatFilter === 'unrestricted') return r.level === 'critical' || r.level === 'high';
+  if (activeStatFilter === 'billable') return !!r.billableEnabled;
+  return true;
+}
+
 function toast(msg) {
   els.toast.textContent = msg;
   els.toast.classList.add('show');
@@ -478,17 +492,24 @@ function renderStats(findings) {
     if (r.billableEnabled) billable++;
   });
   const data = [
-    { n: total, l: 'keys found' },
-    { n: maps, l: 'maps-context' },
-    { n: audited, l: 'audited' },
-    { n: unrestricted, l: 'UNRESTRICTED', alert: unrestricted > 0 },
-    { n: billable, l: 'billable reachable', alert: billable > 0 }
+    { n: total, l: 'keys found', key: null },        // clears the filter
+    { n: maps, l: 'maps-context', key: 'maps' },
+    { n: audited, l: 'audited', key: 'audited' },
+    { n: unrestricted, l: 'UNRESTRICTED', alert: unrestricted > 0, key: 'unrestricted' },
+    { n: billable, l: 'billable reachable', alert: billable > 0, key: 'billable' }
   ];
   els.stats.innerHTML = '';
   data.forEach((d) => {
     const div = document.createElement('div');
-    div.className = 'stat' + (d.alert ? ' alert' : '');
+    const active = d.key && activeStatFilter === d.key;
+    div.className = 'stat clickable' + (d.alert ? ' alert' : '') + (active ? ' active' : '');
+    div.title = d.key ? 'Filter to ' + d.l + ' keys (click again to clear)' : 'Show all keys';
     div.innerHTML = '<div class="n">' + d.n + '</div><div class="l">' + d.l + '</div>';
+    div.addEventListener('click', () => {
+      // Toggle: re-clicking the active tile (or the "keys found" total) clears it.
+      activeStatFilter = active ? null : d.key;
+      render();
+    });
     els.stats.appendChild(div);
   });
 }
@@ -523,13 +544,14 @@ async function doRender() {
   currentFindings = db.findings.slice();
   const q = (els.filter.value || '').toLowerCase().trim();
   const matchesQuery = (f) => !q || f.key.toLowerCase().includes(q) ||
+    (f.provider || '').toLowerCase().includes(q) ||
     (f.origins || []).some((o) => o.toLowerCase().includes(q));
   // Heuristic 'unknown' findings live in their own tab so they don't drown the
   // real, auditable keys.
   const known = currentFindings.filter((f) => f.provider !== 'unknown');
   const unknown = currentFindings.filter((f) => f.provider === 'unknown');
   renderUnknown(unknown, matchesQuery);
-  let items = known.filter(matchesQuery);
+  let items = known.filter((f) => matchesQuery(f) && matchesStatFilter(f));
   // Stable "logged" order — by first-seen time. NEVER sorted by risk, so a row
   // or its domain group never jumps when an audit starts/completes.
   const loggedTs = (f) => new Date(f.firstSeen).getTime() || 0;
