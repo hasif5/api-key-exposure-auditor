@@ -131,7 +131,7 @@ All data stays **local** in `chrome.storage.local`. The extension contacts the n
 1. **Browse.** Detection runs automatically; the badge counts distinct keys per tab.
 2. **Popup** -- click the toolbar icon to see keys found on the current page, their sources, and provider.
 3. **Audit** -- tick the authorization acknowledgment, then click **Audit key**. The default run uses free access checks. Tick "include billable generation probes" to also test token-billing inference.
-4. **Dashboard** -- full findings view sorted by risk, with per-endpoint detail, domain grouping, and **JSON / CSV export + import**.
+4. **Dashboard** -- full findings view with domain grouping, **paginated display** (25/50/100/All), **filter by provider / risk / audit status**, **sort by** first-seen / last-seen / risk, enhanced search (key, origin, source, snippet), cancel button for batch audits, and **JSON / CSV export + import**.
 5. **Collection** -- save any key for later; a dedicated persistent page lets you revisit, annotate, re-audit, and export.
 
 ### Reading the Results
