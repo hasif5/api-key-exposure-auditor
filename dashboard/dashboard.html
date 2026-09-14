@@ -10,7 +10,7 @@
   <header class="top">
     <div class="brand"><span class="logo">🔑</span><h1>API Key Exposure Auditor &mdash; Research Dashboard</h1></div>
     <div class="toolbar">
-      <input type="search" id="filter" placeholder="Filter by key / origin…" />
+      <input type="search" id="filter" placeholder="Search key, origin, source, snippet…" />
       <label class="chk" title="Adds billable inference/generation calls that consume tokens (OpenAI, Anthropic, xAI, Gemini, Vertex)">
         <input type="checkbox" id="genChk" checked /> include billable generation probes
       </label>
@@ -73,10 +73,53 @@
 
   <div id="progress" class="progress" hidden>
     <div class="progress-track"><div id="progressBar" class="progress-bar"></div></div>
-    <span id="progressLabel" class="progress-label"></span>
+    <div class="progress-footer">
+      <span id="progressLabel" class="progress-label"></span>
+      <button id="cancelAuditBtn" class="btn danger small" hidden>Cancel</button>
+    </div>
   </div>
 
   <section class="stats" id="stats"></section>
+
+  <div class="filter-bar" id="filterBar">
+    <select id="providerFilter" class="filter-select">
+      <option value="">All providers</option>
+      <option value="google">Google</option>
+      <option value="openai">OpenAI</option>
+      <option value="anthropic">Anthropic</option>
+      <option value="openrouter">OpenRouter</option>
+      <option value="xai">xAI</option>
+      <option value="twilio">Twilio</option>
+      <option value="aws">AWS</option>
+      <option value="github">GitHub</option>
+      <option value="gitlab">GitLab</option>
+      <option value="slack">Slack</option>
+      <option value="stripe">Stripe</option>
+    </select>
+    <select id="riskFilter" class="filter-select">
+      <option value="">All risk levels</option>
+      <option value="critical">Critical</option>
+      <option value="high">Unrestricted</option>
+      <option value="restricted">Restricted</option>
+      <option value="unknown">Unknown</option>
+    </select>
+    <select id="statusFilter" class="filter-select">
+      <option value="">All statuses</option>
+      <option value="audited">Audited</option>
+      <option value="not-audited">Not audited</option>
+    </select>
+    <select id="sortBy" class="filter-select">
+      <option value="first-seen">Sort: First seen</option>
+      <option value="last-seen">Sort: Last seen</option>
+      <option value="risk">Sort: Risk level</option>
+    </select>
+    <select id="pageSizeSelect" class="filter-select">
+      <option value="25">25 per page</option>
+      <option value="50">50 per page</option>
+      <option value="100">100 per page</option>
+      <option value="0">Show all</option>
+    </select>
+  </div>
 
   <main>
     <table id="tbl">
@@ -98,6 +141,7 @@
       </thead>
       <tbody id="rows"></tbody>
     </table>
+    <div id="pagination" class="pagination-bar" hidden></div>
     <p class="empty" id="emptyMsg">No keys logged yet. Browse sites with the extension enabled, then return here.</p>
   </main>
   </div><!-- /keysPanel -->
@@ -113,6 +157,7 @@
     <section class="stats" id="unknownStats"></section>
     <main class="unknown-main">
       <div id="unknownList"></div>
+      <div id="unknownPagination" class="pagination-bar" hidden></div>
       <p class="empty" id="unknownEmpty">No heuristic matches yet.</p>
     </main>
   </div><!-- /unknownPanel -->

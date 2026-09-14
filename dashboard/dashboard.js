@@ -58,7 +58,14 @@ const els = {
   toast: document.getElementById('toast'),
   progress: document.getElementById('progress'),
   progressBar: document.getElementById('progressBar'),
-  progressLabel: document.getElementById('progressLabel')
+  progressLabel: document.getElementById('progressLabel'),
+  paginationBar: document.getElementById('pagination'),
+  providerFilter: document.getElementById('providerFilter'),
+  riskFilter: document.getElementById('riskFilter'),
+  statusFilter: document.getElementById('statusFilter'),
+  sortBy: document.getElementById('sortBy'),
+  pageSizeSelect: document.getElementById('pageSizeSelect'),
+  cancelAuditBtn: document.getElementById('cancelAuditBtn')
 };
 
 // ---- Progress bar ----------------------------------------------------------
@@ -83,9 +90,23 @@ function hideProgress() {
   els.progressBar.classList.remove('indeterminate');
   els.progressBar.style.width = '0%';
   els.progressLabel.textContent = '';
+  if (els.cancelAuditBtn) els.cancelAuditBtn.hidden = true;
+}
+
+function showCancelBtn() {
+  if (els.cancelAuditBtn) els.cancelAuditBtn.hidden = false;
+}
+
+if (els.cancelAuditBtn) {
+  els.cancelAuditBtn.addEventListener('click', () => {
+    auditAborted = true;
+    els.cancelAuditBtn.hidden = true;
+    els.progressLabel.textContent = 'Cancelling…';
+  });
 }
 
 let consented = false;
+let auditAborted = false;
 const expanded = new Set();
 // >0 while any audit (single, per-domain, or all) is running. The storage-change
 // listener checks this to avoid re-rendering the whole table on every per-key
@@ -95,6 +116,24 @@ let auditing = 0;
 // Active summary-tile filter (null = show everything). Toggled by clicking a
 // stat tile, so "show me only the unrestricted keys" is one click.
 let activeStatFilter = null; // null | 'maps' | 'audited' | 'unrestricted' | 'billable'
+
+// Pagination state — keys panel
+let currentPage = 0;
+let pageSize = 25;
+// Pagination state — unknown panel
+let ukCurrentPage = 0;
+let ukPageSize = 25;
+
+function matchesFreeText(f, q) {
+  if (!q) return true;
+  if (f.key.toLowerCase().includes(q)) return true;
+  if ((f.provider || '').toLowerCase().includes(q)) return true;
+  if ((f.origins || []).some((o) => o.toLowerCase().includes(q))) return true;
+  if ((f.snippet || '').toLowerCase().includes(q)) return true;
+  if ((f.sources || []).some((s) => s.toLowerCase().includes(q))) return true;
+  if ((f.pageUrls || []).some((u) => u.toLowerCase().includes(q))) return true;
+  return false;
+}
 
 function matchesStatFilter(f) {
   if (!activeStatFilter) return true;
@@ -272,20 +311,28 @@ function sourceLinksEl(f) {
   return box;
 }
 
+// Per-key audit with a 60-second timeout to prevent indefinite hangs.
+const AUDIT_TIMEOUT_MS = 60000;
+
 async function runAudit(findingId, statusEl) {
   if (!ensureConsent()) return null;
   if (statusEl) statusEl.textContent = 'auditing…';
   try {
-    const resp = await chrome.runtime.sendMessage({
-      type: 'GAKS_AUDIT',
-      findingId,
-      includeGenerate: els.gen.checked
-    });
+    const timeout = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('audit_timeout')), AUDIT_TIMEOUT_MS));
+    const resp = await Promise.race([
+      chrome.runtime.sendMessage({
+        type: 'GAKS_AUDIT',
+        findingId,
+        includeGenerate: els.gen.checked
+      }),
+      timeout
+    ]);
     if (resp && resp.ok) return resp.finding;
     if (statusEl) statusEl.textContent = 'failed';
     return null;
   } catch (e) {
-    if (statusEl) statusEl.textContent = 'error';
+    if (statusEl) statusEl.textContent = e.message === 'audit_timeout' ? 'timeout' : 'error';
     return null;
   }
 }
@@ -508,6 +555,7 @@ function renderStats(findings) {
     div.addEventListener('click', () => {
       // Toggle: re-clicking the active tile (or the "keys found" total) clears it.
       activeStatFilter = active ? null : d.key;
+      currentPage = 0;
       render();
     });
     els.stats.appendChild(div);
@@ -516,6 +564,55 @@ function renderStats(findings) {
 
 // Risk ordering: most dangerous keys float to the top.
 const RISK_RANK = { critical: 0, high: 1, restricted: 2, unknown: 3 };
+
+// Shared pagination-bar renderer used by both the keys and unknown panels.
+function renderPaginationBar(container, total, start, end, totalPages, page, size, onChange) {
+  if (!container) return;
+  container.innerHTML = '';
+  if (total === 0) { container.hidden = true; return; }
+  container.hidden = false;
+
+  const info = document.createElement('span');
+  info.className = 'pg-info';
+  info.textContent = 'Showing ' + (start + 1) + '\u2013' + end + ' of ' + total;
+
+  const nav = document.createElement('span');
+  nav.className = 'pg-nav';
+  const prevBtn = document.createElement('button');
+  prevBtn.className = 'btn ghost small';
+  prevBtn.textContent = '\u2190 Prev';
+  prevBtn.disabled = page <= 0;
+  prevBtn.addEventListener('click', () => onChange(page - 1, size));
+  const pageLabel = document.createElement('span');
+  pageLabel.className = 'pg-current';
+  pageLabel.textContent = 'Page ' + (page + 1) + ' / ' + totalPages;
+  const nextBtn = document.createElement('button');
+  nextBtn.className = 'btn ghost small';
+  nextBtn.textContent = 'Next \u2192';
+  nextBtn.disabled = page >= totalPages - 1;
+  nextBtn.addEventListener('click', () => onChange(page + 1, size));
+  nav.appendChild(prevBtn);
+  nav.appendChild(pageLabel);
+  nav.appendChild(nextBtn);
+
+  const sizeWrap = document.createElement('span');
+  sizeWrap.className = 'pg-size';
+  const sizeLabel = document.createElement('span');
+  sizeLabel.className = 'pg-size-label';
+  sizeLabel.textContent = 'Per page:';
+  sizeWrap.appendChild(sizeLabel);
+  [25, 50, 100, 0].forEach((s) => {
+    const btn = document.createElement('button');
+    btn.className = 'btn ghost small' + (size === s ? ' pg-active' : '');
+    btn.textContent = s === 0 ? 'All' : String(s);
+    btn.addEventListener('click', () => onChange(0, s));
+    sizeWrap.appendChild(btn);
+  });
+
+  container.appendChild(info);
+  container.appendChild(nav);
+  container.appendChild(sizeWrap);
+}
 
 let currentFindings = [];
 
@@ -543,19 +640,50 @@ async function doRender() {
   savedKeys = new Set(coll.items.map((i) => i.key));
   currentFindings = db.findings.slice();
   const q = (els.filter.value || '').toLowerCase().trim();
-  const matchesQuery = (f) => !q || f.key.toLowerCase().includes(q) ||
-    (f.provider || '').toLowerCase().includes(q) ||
-    (f.origins || []).some((o) => o.toLowerCase().includes(q));
+  const matchesQuery = (f) => matchesFreeText(f, q);
   // Heuristic 'unknown' findings live in their own tab so they don't drown the
   // real, auditable keys.
   const known = currentFindings.filter((f) => f.provider !== 'unknown');
   const unknown = currentFindings.filter((f) => f.provider === 'unknown');
   renderUnknown(unknown, matchesQuery);
-  let items = known.filter((f) => matchesQuery(f) && matchesStatFilter(f));
-  // Stable "logged" order — by first-seen time. NEVER sorted by risk, so a row
-  // or its domain group never jumps when an audit starts/completes.
+  // Read dropdown filter / sort state
+  const providerVal = els.providerFilter ? els.providerFilter.value : '';
+  const riskVal = els.riskFilter ? els.riskFilter.value : '';
+  const statusVal = els.statusFilter ? els.statusFilter.value : '';
+  const sortByVal = els.sortBy ? els.sortBy.value : 'first-seen';
+
+  let items = known.filter((f) => {
+    if (!matchesQuery(f) || !matchesStatFilter(f)) return false;
+    if (providerVal && f.provider !== providerVal) return false;
+    if (riskVal) {
+      const rl = assessRisk(f.audits, f.provider).level;
+      if (rl !== riskVal) return false;
+    }
+    if (statusVal === 'audited' && !(f.audits && f.audits.length)) return false;
+    if (statusVal === 'not-audited' && (f.audits && f.audits.length)) return false;
+    return true;
+  });
+
+  // Sorting helpers
   const loggedTs = (f) => new Date(f.firstSeen).getTime() || 0;
-  const byLogged = (a, b) => loggedTs(a) - loggedTs(b) || a.key.localeCompare(b.key);
+  const lastTs = (f) => new Date(f.lastSeen).getTime() || 0;
+  const riskOf = (f) => RISK_RANK[assessRisk(f.audits, f.provider).level] ?? 3;
+
+  let byItem, groupSort;
+  if (sortByVal === 'last-seen') {
+    byItem = (a, b) => lastTs(b) - lastTs(a) || a.key.localeCompare(b.key);
+    const latestTs = (arr) => Math.max(...arr.map(lastTs));
+    groupSort = (a, b) => latestTs(b[1]) - latestTs(a[1]) || a[0].localeCompare(b[0]);
+  } else if (sortByVal === 'risk') {
+    byItem = (a, b) => riskOf(a) - riskOf(b) || a.key.localeCompare(b.key);
+    const bestRisk = (arr) => Math.min(...arr.map(riskOf));
+    groupSort = (a, b) => bestRisk(a[1]) - bestRisk(b[1]) || a[0].localeCompare(b[0]);
+  } else {
+    // Default: first-seen (earliest first). Stable logged order.
+    byItem = (a, b) => loggedTs(a) - loggedTs(b) || a.key.localeCompare(b.key);
+    const firstLoggedTs = (arr) => Math.min(...arr.map(loggedTs));
+    groupSort = (a, b) => firstLoggedTs(a[1]) - firstLoggedTs(b[1]) || a[0].localeCompare(b[0]);
+  }
 
   // Group findings by their primary domain.
   const groups = new Map();
@@ -565,19 +693,47 @@ async function doRender() {
     groups.get(d).push(f);
   });
   const groupArr = Array.from(groups.entries());
-  groupArr.forEach(([, arr]) => arr.sort(byLogged));
-  // Group order = when the domain was first logged (earliest first). Stable.
-  const firstLogged = (arr) => Math.min(...arr.map(loggedTs));
-  groupArr.sort((a, b) => firstLogged(a[1]) - firstLogged(b[1]) || a[0].localeCompare(b[0]));
+  groupArr.forEach(([, arr]) => arr.sort(byItem));
+  groupArr.sort(groupSort);
 
   renderStats(known);
   els.rows.innerHTML = '';
   els.empty.style.display = items.length ? 'none' : 'block';
 
+  // ---- Pagination: flatten groups into an ordered key list ----
+  const flatKeys = [];
+  const groupMeta = new Map();
   groupArr.forEach(([domain, arr], gi) => {
+    groupMeta.set(domain, { arr, gi });
+    arr.forEach((f) => flatKeys.push({ domain, f }));
+  });
+
+  const totalKeys = flatKeys.length;
+  const effSize = pageSize === 0 ? (totalKeys || 1) : pageSize;
+  const totalPages = Math.max(1, Math.ceil(totalKeys / effSize));
+  if (currentPage >= totalPages) currentPage = totalPages - 1;
+  if (currentPage < 0) currentPage = 0;
+  const pgStart = currentPage * effSize;
+  const pgEnd = Math.min(pgStart + effSize, totalKeys);
+  const pageSlice = flatKeys.slice(pgStart, pgEnd);
+
+  // Re-group the visible slice, preserving domain order
+  const pageGroupOrder = [];
+  const pageGroupMap = new Map();
+  pageSlice.forEach(({ domain, f }) => {
+    if (!pageGroupMap.has(domain)) {
+      pageGroupMap.set(domain, []);
+      pageGroupOrder.push(domain);
+    }
+    pageGroupMap.get(domain).push(f);
+  });
+
+  pageGroupOrder.forEach((domain) => {
+    const { arr, gi } = groupMeta.get(domain);
+    const pageFindings = pageGroupMap.get(domain);
     const collapsed = collapsedGroups.has(domain);
 
-    // Per-domain status breakdown.
+    // Per-domain status breakdown (full domain, not just this page's slice).
     const c = { critical: 0, high: 0, restricted: 0, closed: 0, unaudited: 0 };
     arr.forEach((f) => {
       if (!f.audits || !f.audits.length) { c.unaudited++; return; }
@@ -600,13 +756,17 @@ async function doRender() {
     const td = document.createElement('td');
     td.colSpan = 5;
 
+    const countText = pageFindings.length < arr.length
+      ? pageFindings.length + ' of ' + arr.length + ' key' + (arr.length > 1 ? 's' : '')
+      : arr.length + ' key' + (arr.length > 1 ? 's' : '');
+
     const left = document.createElement('div');
     left.className = 'gh-left';
     left.innerHTML =
       '<span class="gh-toggle">' + (collapsed ? '▶' : '▼') + '</span>' +
       '<span class="gh-seq">#' + (gi + 1) + '</span>' +
       '<span class="gh-domain">' + esc(domain) + '</span>' +
-      '<span class="gh-count">' + arr.length + ' key' + (arr.length > 1 ? 's' : '') + '</span>' +
+      '<span class="gh-count">' + countText + '</span>' +
       '<span class="gh-status">' + statusHtml + '</span>';
 
     const right = document.createElement('div');
@@ -647,7 +807,7 @@ async function doRender() {
     els.rows.appendChild(hdr);
     if (collapsed) return;
 
-    arr.forEach((f) => {
+    pageFindings.forEach((f) => {
       els.rows.appendChild(buildRow(f));
       if (expanded.has(f.id)) {
         const dr = document.createElement('tr');
@@ -657,6 +817,13 @@ async function doRender() {
       }
     });
   });
+
+  renderPaginationBar(els.paginationBar, totalKeys, pgStart, pgEnd, totalPages,
+    currentPage, pageSize, (page, size) => {
+      currentPage = page; pageSize = size;
+      if (els.pageSizeSelect) els.pageSizeSelect.value = String(size);
+      render();
+    });
 
   window.scrollTo(0, scrollY); // keep the user where they were
 }
@@ -670,6 +837,7 @@ const unknownList = document.getElementById('unknownList');
 const unknownEmpty = document.getElementById('unknownEmpty');
 const unknownStats = document.getElementById('unknownStats');
 const unknownCountEl = document.getElementById('unknownCount');
+const ukPaginationBar = document.getElementById('unknownPagination');
 const ukCollapsedGroups = new Set(); // domains collapsed in the unknown tab
 const ukRefOpen = new Set();         // finding ids whose code reference is expanded
 
@@ -783,8 +951,7 @@ function buildUnknownRow(f) {
 let lastUnknown = [];
 function renderUnknownCurrent() {
   const q = (els.filter.value || '').toLowerCase().trim();
-  const matchesQuery = (f) => !q || f.key.toLowerCase().includes(q) ||
-    (f.origins || []).some((o) => o.toLowerCase().includes(q));
+  const matchesQuery = (f) => matchesFreeText(f, q);
   renderUnknown(lastUnknown, matchesQuery);
 }
 
@@ -804,6 +971,11 @@ function renderUnknown(unknown, matchesQuery) {
   const groupArr = Array.from(groups.entries())
     .sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]));
 
+  // Sort within each group before flattening for stable pagination order.
+  groupArr.forEach(([, list]) => {
+    list.sort((a, b) => (new Date(b.lastSeen) - new Date(a.lastSeen)) || a.key.localeCompare(b.key));
+  });
+
   unknownStats.innerHTML =
     '<div class="stat"><div class="n">' + items.length + '</div><div class="l">matches</div></div>' +
     '<div class="stat"><div class="n">' + groupArr.length + '</div><div class="l">sites</div></div>';
@@ -811,8 +983,36 @@ function renderUnknown(unknown, matchesQuery) {
   unknownList.innerHTML = '';
   unknownEmpty.style.display = items.length ? 'none' : 'block';
 
+  // ---- Pagination for the unknown tab ----
+  const flatUk = [];
+  const ukGroupMeta = new Map();
   groupArr.forEach(([domain, list]) => {
-    list.sort((a, b) => (new Date(b.lastSeen) - new Date(a.lastSeen)) || a.key.localeCompare(b.key));
+    ukGroupMeta.set(domain, list);
+    list.forEach((f) => flatUk.push({ domain, f }));
+  });
+
+  const totalUk = flatUk.length;
+  const effUkSize = ukPageSize === 0 ? (totalUk || 1) : ukPageSize;
+  const totalUkPages = Math.max(1, Math.ceil(totalUk / effUkSize));
+  if (ukCurrentPage >= totalUkPages) ukCurrentPage = totalUkPages - 1;
+  if (ukCurrentPage < 0) ukCurrentPage = 0;
+  const ukStart = ukCurrentPage * effUkSize;
+  const ukEnd = Math.min(ukStart + effUkSize, totalUk);
+  const ukSlice = flatUk.slice(ukStart, ukEnd);
+
+  const ukPageOrder = [];
+  const ukPageMap = new Map();
+  ukSlice.forEach(({ domain, f }) => {
+    if (!ukPageMap.has(domain)) {
+      ukPageMap.set(domain, []);
+      ukPageOrder.push(domain);
+    }
+    ukPageMap.get(domain).push(f);
+  });
+
+  ukPageOrder.forEach((domain) => {
+    const fullList = ukGroupMeta.get(domain);
+    const pageList = ukPageMap.get(domain);
     const collapsed = ukCollapsedGroups.has(domain);
 
     const group = document.createElement('div');
@@ -822,9 +1022,12 @@ function renderUnknown(unknown, matchesQuery) {
     hdr.className = 'uk-group-hdr';
     const left = document.createElement('div');
     left.className = 'uk-group-left';
+    const ukCountText = pageList.length < fullList.length
+      ? pageList.length + ' of ' + fullList.length
+      : String(fullList.length);
     left.innerHTML = '<span class="gh-toggle">' + (collapsed ? '▶' : '▼') + '</span>' +
       '<span class="uk-group-domain">' + esc(domain) + '</span>' +
-      '<span class="uk-group-count">' + list.length + '</span>';
+      '<span class="uk-group-count">' + ukCountText + '</span>';
     hdr.appendChild(left);
 
     const right = document.createElement('div');
@@ -839,11 +1042,11 @@ function renderUnknown(unknown, matchesQuery) {
     }
     const delAll = document.createElement('button');
     delAll.className = 'btn danger small';
-    delAll.textContent = 'Delete ' + list.length;
+    delAll.textContent = 'Delete ' + fullList.length;
     delAll.addEventListener('click', async (e) => {
       e.stopPropagation();
-      if (!window.confirm('Delete all ' + list.length + ' heuristic matches from ' + domain + '?')) return;
-      for (const f of list) await deleteFinding(f.id);
+      if (!window.confirm('Delete all ' + fullList.length + ' heuristic matches from ' + domain + '?')) return;
+      for (const f of fullList) await deleteFinding(f.id);
       render();
     });
     right.appendChild(delAll);
@@ -859,11 +1062,16 @@ function renderUnknown(unknown, matchesQuery) {
     if (!collapsed) {
       const bodyWrap = document.createElement('div');
       bodyWrap.className = 'uk-group-body';
-      list.forEach((f) => bodyWrap.appendChild(buildUnknownRow(f)));
+      pageList.forEach((f) => bodyWrap.appendChild(buildUnknownRow(f)));
       group.appendChild(bodyWrap);
     }
     unknownList.appendChild(group);
   });
+
+  renderPaginationBar(ukPaginationBar, totalUk, ukStart, ukEnd, totalUkPages,
+    ukCurrentPage, ukPageSize, (page, size) => {
+      ukCurrentPage = page; ukPageSize = size; renderUnknownCurrent();
+    });
 }
 
 // How many keys to audit at once. Each key itself fans out to ~14 probes
@@ -876,11 +1084,12 @@ const KEY_AUDIT_CONCURRENCY = 4;
 async function auditMany(findings, onProgress) {
   // Skip heuristic 'unknown' findings — there's no provider endpoint for them.
   findings = findings.filter((f) => f.provider !== 'unknown');
+  auditAborted = false;
   const total = findings.length;
   let done = 0;
   let idx = 0;
   async function worker() {
-    while (idx < findings.length) {
+    while (idx < findings.length && !auditAborted) {
       const f = findings[idx++];
       // One key's failure (audit error, storage hiccup) must not abort the whole
       // batch — swallow per-key and keep going.
@@ -905,6 +1114,7 @@ async function auditGroup(findings, btn) {
   btn.disabled = true;
   auditing++;
   showProgressDeterminate(0, total, 'Auditing domain 0 / ' + total);
+  showCancelBtn();
   let done = 0;
   try {
     done = await auditMany(findings, (d, t) => {
@@ -912,14 +1122,14 @@ async function auditGroup(findings, btn) {
       showProgressDeterminate(d, t, 'Audited ' + d + ' / ' + t);
     });
   } finally {
-    // Always restore the UI, even if the batch threw unexpectedly.
     auditing--;
     hideProgress();
     btn.disabled = false;
     btn.textContent = label;
   }
   render();
-  toast('Audited ' + done + ' keys in this domain');
+  const suffix = auditAborted ? ' (cancelled)' : '';
+  toast('Audited ' + done + ' keys in this domain' + suffix);
 }
 
 // Add a domain to the ignore list AND remove its already-logged keys
@@ -1023,6 +1233,7 @@ document.getElementById('auditAllBtn').addEventListener('click', async () => {
   btn.disabled = true;
   auditing++;
   showProgressDeterminate(0, total, 'Auditing 0 / ' + total);
+  showCancelBtn();
   let done = 0;
   try {
     done = await auditMany(queue, (d, t) => {
@@ -1030,17 +1241,29 @@ document.getElementById('auditAllBtn').addEventListener('click', async () => {
       showProgressDeterminate(d, t, 'Audited ' + d + ' / ' + t);
     });
   } finally {
-    // Always restore the UI, even if the batch threw unexpectedly.
     auditing--;
     hideProgress();
     btn.disabled = false;
     btn.textContent = 'Audit all';
   }
   render();
-  toast('Audited ' + done + ' keys');
+  const suffix = auditAborted ? ' (cancelled)' : '';
+  toast('Audited ' + done + ' keys' + suffix);
 });
 
-els.filter.addEventListener('input', render);
+els.filter.addEventListener('input', () => { currentPage = 0; ukCurrentPage = 0; render(); });
+
+// Filter / sort dropdowns — all reset to page 0 on change.
+['providerFilter', 'riskFilter', 'statusFilter', 'sortBy'].forEach((id) => {
+  if (els[id]) els[id].addEventListener('change', () => { currentPage = 0; render(); });
+});
+if (els.pageSizeSelect) {
+  els.pageSizeSelect.addEventListener('change', () => {
+    pageSize = parseInt(els.pageSizeSelect.value, 10) || 0;
+    currentPage = 0;
+    render();
+  });
+}
 
 // ---- Ignored-domains settings ----
 const ignoreInput = document.getElementById('ignoreInput');

@@ -73,7 +73,8 @@ body {
 @keyframes gaks-indet {
   0% { margin-left: -35%; } 100% { margin-left: 100%; }
 }
-.progress-label { font-size: 11.5px; color: var(--muted); display: inline-block; margin-top: 5px; }
+.progress-footer { display: flex; align-items: center; gap: 10px; margin-top: 5px; }
+.progress-label { font-size: 11.5px; color: var(--muted); }
 
 /* Ignored-domains settings */
 .settings { margin: 12px 20px 0; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; }
@@ -351,6 +352,32 @@ tr.row-high td { background: #1d1611; }
   border-radius: 6px; font-family: ui-monospace, Consolas, monospace; font-size: 11.5px;
   color: #cdd6e0; white-space: pre-wrap; word-break: break-all; max-height: 180px; overflow: auto;
 }
+
+/* Filter / sort bar */
+.filter-bar {
+  display: flex; flex-wrap: wrap; gap: 8px; padding: 8px 20px;
+  background: var(--panel); border-bottom: 1px solid var(--border);
+}
+.filter-select {
+  background: var(--panel2); color: var(--txt); border: 1px solid var(--border);
+  border-radius: 6px; padding: 5px 8px; font-size: 12px; cursor: pointer;
+  font-family: inherit;
+}
+.filter-select:focus { border-color: var(--accent); outline: none; }
+
+/* Pagination bar */
+.pagination-bar {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+  padding: 10px 12px; margin-top: 6px;
+  background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+}
+.pagination-bar[hidden] { display: none; }
+.pg-info { font-size: 12px; color: var(--muted); white-space: nowrap; }
+.pg-nav { display: flex; align-items: center; gap: 6px; }
+.pg-current { font-size: 12px; color: var(--txt); min-width: 90px; text-align: center; }
+.pg-size { display: flex; align-items: center; gap: 4px; }
+.pg-size-label { font-size: 11px; color: var(--muted); margin-right: 2px; }
+.pg-active { border-color: var(--accent); color: var(--accent); }
 
 .empty { color: var(--muted); text-align: center; padding: 40px; }
 .spinner { color: var(--accent); font-size: 11px; }
