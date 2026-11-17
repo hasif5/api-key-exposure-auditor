@@ -31,6 +31,7 @@ research/
   harness/
     logic.mjs                    Node run of the real lib/ and content/ code with mocked chrome + fetch
     browser.mjs                  real Chromium + unpacked extension, driven over raw CDP
+    capture-readme-shots.mjs     captures the popup and dashboard images used in the top-level README (docs/screenshots/)
     cdp.mjs                      minimal DevTools Protocol client (no dependencies)
     scrub.mjs                    redacts credential-shaped strings before evidence is written
     scan-leaks.mjs               fails if anything credential-shaped is committed under research/

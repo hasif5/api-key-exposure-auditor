@@ -18,17 +18,13 @@ Live-validated providers: **Google**, **OpenAI**, **Anthropic**, **OpenRouter**,
 
 > If this tool helps you secure your projects, consider giving it a star -- it helps others find it.
 
-<!-- Replace with actual screenshots:
-     1. Take a popup screenshot showing detected keys
-     2. Take a dashboard screenshot showing audit results
-     3. Save to docs/screenshots/ and uncomment below
-
 <p align="center">
-  <img src="docs/screenshots/popup.png" alt="Popup showing detected keys" width="340" />
+  <img src="docs/screenshots/popup.png" alt="Popup listing the API keys detected on the current page, each labelled with its provider" width="340" />
   &nbsp;&nbsp;
-  <img src="docs/screenshots/dashboard.png" alt="Dashboard with audit results" width="560" />
+  <img src="docs/screenshots/dashboard.png" alt="Dashboard listing all detected keys grouped by origin, with risk, source and audit columns" width="560" />
 </p>
--->
+
+<p align="center"><sub>The popup (current tab) and the dashboard (all findings), captured from the real extension on a local test page. Every key shown is synthetic. Detection only: no audit was run, so risk shows as unknown. Reproduce with <code>node research/harness/capture-readme-shots.mjs</code>.</sub></p>
 
 ---
 
