@@ -95,10 +95,19 @@ content.js  ──GAKS_FINDINGS / GAKS_SCRIPTS──▶  background.js (service 
 - **`lib/audit.js`** — Google-specific probes (Maps/Places/Cloud/AI endpoints) and
   risk assessment, plus shared fetch helpers (`doFetch`, `runPool`, retry/backoff).
 - **`lib/store.js`** — normalized, deduped findings DB. **Identity is the key string
-  itself** (`findingId(key) === key`): a key is logged once and enriched with every
-  origin/page/source it's seen on. `normalizeFindings` collapses duplicates and
-  upgrades legacy record shapes on read. Writes are serialized through a promise
-  chain so concurrent webRequest + content-script updates don't clobber each other.
+ itself** (`findingId(key) === key`): a key is logged once and enriched with every
+ origin/page/source it's seen on. **One storage record per finding** under
+ `gaks_f:<key>` (`REC_PREFIX`), so a sighting costs one small read + write instead
+ of rewriting the whole DB (the old single `gaks_db` blob got slower as it grew;
+ `ensureMigrated` splits it on first access). Hot paths must stay O(1): use
+ `getFinding`/`withRecord` for a single key (`getFindings` for a known set, e.g.
+ the popup's tab keys, which paints before its full origin-match pass), and only
+ call `getDb()` (a full `get(null)`) when a screen truly needs every finding. `normalizeFindings` is
+ only used by the legacy migration. An unchanged re-sighting skips the write
+ (`LAST_SEEN_REFRESH_MS`). Writes are serialized through a promise chain so
+ concurrent webRequest + content-script updates don't clobber each other. The
+ dashboard keeps an in-memory copy patched from `storage.onChanged` (it does not
+ re-read per change) — call `render(true)` after the dashboard itself mutates data.
 - **`lib/ignore.js`** — domain ignore-list (Google/YouTube/Facebook/etc. by default,
   user-extendable). `content/patterns.js` mirrors this list for the content world.
 - **`lib/keys.js`** — shared detection helpers for the module world (mirror of the

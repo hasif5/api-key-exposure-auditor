@@ -235,19 +235,44 @@
     }
   }
 
+  // Adaptive rescan pacing. One scan serializes the whole document and runs every
+  // detector over it, so on a page that mutates continuously (chat, feeds, live
+  // dashboards) a fixed 400 ms cadence keeps a CPU core busy for as long as the
+  // tab is open. The minimum gap between scans therefore grows with what the last
+  // scan cost, and with how many scans this page has already needed. The gap is
+  // measured from the end of the previous scan, so a page that has been quiet
+  // still reacts after SCAN_MIN_DELAY.
+  var SCAN_MIN_DELAY = 400;       // fastest rescan (a page that just changed)
+  var SCAN_MAX_DELAY = 15000;     // never wait longer than this because of cost alone
+  var SCAN_COST_FACTOR = 20;      // a scan may use at most ~1/20 of the main thread
+  var SCAN_BURST_LIMIT = 25;      // scans before the page counts as "never settles"
+  var SCAN_SLOW_DELAY = 5000;     // minimum gap once it does
+  var scanCount = 0;
+  var scanGap = SCAN_MIN_DELAY;   // current minimum gap between scans
+  var lastScanEnd = 0;            // 0 = never scanned: the first rescan is not held back
+
   function scanAndReport() {
     pending = false;
-    reportScripts();
-    reportFindings(collectDomFindings()
-      .concat(collectResourceFindings())
-      .concat(collectStorageFindings())
-      .concat(collectUrlFindings()));
+    var t0 = performance.now();
+    try {
+      reportScripts();
+      reportFindings(collectDomFindings()
+        .concat(collectResourceFindings())
+        .concat(collectStorageFindings())
+        .concat(collectUrlFindings()));
+    } finally {
+      lastScanEnd = performance.now();
+      scanCount++;
+      scanGap = Math.min(SCAN_MAX_DELAY, Math.max(SCAN_MIN_DELAY, (lastScanEnd - t0) * SCAN_COST_FACTOR));
+      if (scanCount > SCAN_BURST_LIMIT) scanGap = Math.max(scanGap, SCAN_SLOW_DELAY);
+    }
   }
 
   function scheduleScan() {
     if (pending) return;
     pending = true;
-    setTimeout(scanAndReport, 400);
+    var sinceLast = lastScanEnd ? performance.now() - lastScanEnd : scanGap;
+    setTimeout(scanAndReport, Math.max(SCAN_MIN_DELAY, scanGap - sinceLast));
   }
 
   // ---- Client-side stores (async): IndexedDB + Cache Storage ----------------

@@ -180,7 +180,8 @@ async function main() {
   await sleep(1500);
 
   // --- read the extension's database
-  const db = await swEval("chrome.storage.local.get('gaks_db').then((r) => r.gaks_db || { findings: [] })");
+  // One record per finding under "gaks_f:<key>" (lib/store.js REC_PREFIX); an old build's single "gaks_db" blob is still read.
+  const db = await swEval("chrome.storage.local.get(null).then((r) => ({ findings: Object.keys(r).filter((k) => k.indexOf('gaks_f:') === 0).map((k) => r[k]).concat((r.gaks_db && r.gaks_db.findings) || []) }))");
   log('extension database: ' + db.findings.length + ' distinct records');
 
   if (PROBE) {

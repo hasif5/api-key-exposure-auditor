@@ -17,16 +17,32 @@ import { urlHostIsIgnored } from './lib/ignore.js';
 // One-time cleanup: collapse any duplicates left by an earlier version.
 migrate().catch((e) => console.error('[GAKS] migrate failed:', e));
 
+// Purging walks every stored record, and the worker restarts often, so it only
+// runs when the ignore rules changed since the last purge: the user's list or the
+// extension version (which carries the built-in defaults). New sightings on
+// ignored domains are already refused at ingest (pageIgnored), so nothing
+// accumulates in between.
+const PURGE_SIG_KEY = 'gaks_purge_sig';
+async function purgeIfRulesChanged(list) {
+  const sig = chrome.runtime.getManifest().version + '|' + list.join(',');
+  const res = await chrome.storage.local.get(PURGE_SIG_KEY);
+  if (res[PURGE_SIG_KEY] === sig) return;
+  // purgeIgnored resolves to undefined when its write failed; leave the
+  // signature unset then, so the purge is retried on the next start.
+  const purged = await purgeIgnored(list);
+  if (purged) await chrome.storage.local.set({ [PURGE_SIG_KEY]: sig });
+}
+
 // Cache the user-added ignore list and purge any already-stored ignored keys.
 let userIgnore = [];
-getIgnoreDomains().then((l) => { userIgnore = l; return purgeIgnored(l); })
+getIgnoreDomains().then((l) => { userIgnore = l; return purgeIfRulesChanged(l); })
   .catch((e) => console.error('[GAKS] ignore init failed:', e));
 
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area === 'local' && changes.gaks_ignore_domains) {
     userIgnore = Array.isArray(changes.gaks_ignore_domains.newValue)
       ? changes.gaks_ignore_domains.newValue : [];
-    purgeIgnored(userIgnore).catch(() => {});
+    purgeIfRulesChanged(userIgnore).catch(() => {});
   }
 });
 

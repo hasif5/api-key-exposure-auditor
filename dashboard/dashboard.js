@@ -1,7 +1,35 @@
-import { getDb, importDb, clearAll, deleteFinding,
+import { getDb, importDb, clearAll, deleteFinding, REC_PREFIX, healRecord,
   getCollection, saveToCollection, removeFromCollection,
   getIgnoreDomains, setIgnoreDomains, purgeIgnored } from '../lib/store.js';
 import { assessRisk } from '../lib/providers.js';
+
+// ---- Per-finding derived values, computed once per finding object ----------
+// A finding object is replaced (never edited in place) whenever it changes, so
+// keying a WeakMap by the object keeps these correct without any invalidation,
+// and lets sorting/filtering/stats reuse them instead of redoing the work per
+// comparison or per render.
+const riskCache = new WeakMap();
+function riskFor(f) {
+  let r = riskCache.get(f);
+  if (!r) { r = assessRisk(f.audits, f.provider); riskCache.set(f, r); }
+  return r;
+}
+const tsCache = new WeakMap();
+function tsFor(f) {
+  let t = tsCache.get(f);
+  if (!t) { t = { first: Date.parse(f.firstSeen) || 0, last: Date.parse(f.lastSeen) || 0 }; tsCache.set(f, t); }
+  return t;
+}
+const hayCache = new WeakMap();
+function hayFor(f) {
+  let h = hayCache.get(f);
+  if (h === undefined) {
+    h = [f.key, f.provider || '', (f.origins || []).join('\n'), f.snippet || '',
+      (f.sources || []).join('\n'), (f.pageUrls || []).join('\n')].join('\n').toLowerCase();
+    hayCache.set(f, h);
+  }
+  return h;
+}
 
 let savedKeys = new Set();
 const collapsedGroups = new Set();
@@ -126,20 +154,15 @@ let ukPageSize = 25;
 
 function matchesFreeText(f, q) {
   if (!q) return true;
-  if (f.key.toLowerCase().includes(q)) return true;
-  if ((f.provider || '').toLowerCase().includes(q)) return true;
-  if ((f.origins || []).some((o) => o.toLowerCase().includes(q))) return true;
-  if ((f.snippet || '').toLowerCase().includes(q)) return true;
-  if ((f.sources || []).some((s) => s.toLowerCase().includes(q))) return true;
-  if ((f.pageUrls || []).some((u) => u.toLowerCase().includes(q))) return true;
-  return false;
+  // Key, provider, origins, snippet, sources and page URLs, lowercased once.
+  return hayFor(f).includes(q);
 }
 
 function matchesStatFilter(f) {
   if (!activeStatFilter) return true;
   if (activeStatFilter === 'maps') return !!f.mapsContext;
   if (activeStatFilter === 'audited') return !!(f.audits && f.audits.length);
-  const r = assessRisk(f.audits, f.provider);
+  const r = riskFor(f);
   if (activeStatFilter === 'unrestricted') return r.level === 'critical' || r.level === 'high';
   if (activeStatFilter === 'billable') return !!r.billableEnabled;
   return true;
@@ -339,7 +362,7 @@ async function runAudit(findingId, statusEl) {
 
 function buildRow(f) {
   const tr = document.createElement('tr');
-  const risk = assessRisk(f.audits, f.provider);
+  const risk = riskFor(f);
   if (risk.level === 'critical') tr.className = 'row-critical';
   else if (risk.level === 'high') tr.className = 'row-high';
 
@@ -500,7 +523,7 @@ function buildRow(f) {
   delBtn.addEventListener('click', async () => {
     if (!window.confirm('Delete this finding and its audit history?')) return;
     await deleteFinding(f.id);
-    render();
+    render(true);
   });
 
   // 'unknown' findings are heuristic matches with no endpoint to validate.
@@ -523,6 +546,7 @@ function buildRow(f) {
 function replaceRowInPlace(oldTr, finding) {
   const idx = currentFindings.findIndex((x) => x.id === finding.id);
   if (idx !== -1) currentFindings[idx] = finding;
+  if (dbCache) dbCache.set(finding.key, finding); // keep the cache in step with the row
 
   const detailNode = (oldTr.nextElementSibling &&
     oldTr.nextElementSibling.classList.contains('detail-row')) ? oldTr.nextElementSibling : null;
@@ -545,7 +569,7 @@ function renderStats(findings) {
   const audited = findings.filter((f) => f.audits && f.audits.length).length;
   let unrestricted = 0, billable = 0;
   findings.forEach((f) => {
-    const r = assessRisk(f.audits, f.provider);
+    const r = riskFor(f);
     if (r.level === 'critical' || r.level === 'high') unrestricted++;
     if (r.billableEnabled) billable++;
   });
@@ -627,29 +651,108 @@ function renderPaginationBar(container, total, start, end, totalPages, page, siz
 
 let currentFindings = [];
 
+// In-memory copy of the findings (key -> record). Loaded from storage once, then
+// kept current by patching in only the records storage.onChanged reports, so a
+// filter keystroke, page change or crawl-driven refresh never re-reads and
+// re-parses the whole database. Pass render(true) after this page changes data
+// itself (delete / import / clear / audit batch) to force a clean reload.
+let dbCache = null;
+let collDirty = true; // saved-keys set needs (re)loading from the collection
+
+// Storage changes that arrive while a full load is in flight: that load's
+// snapshot may predate them, so they are replayed over it once it lands (in
+// arrival order, so the last write to a record wins either way).
+let loadingFindings = false;
+let pendingPatches = [];
+
+function applyPatch(map, key, next) {
+  if (next && next.key) { healRecord(next); map.set(key, next); }
+  else map.delete(key);
+}
+
+async function loadFindings(reload) {
+  if (reload || !dbCache) {
+    loadingFindings = true;
+    pendingPatches = [];
+    try {
+      const db = await getDb();
+      const fresh = new Map(db.findings.map((f) => [f.key, f]));
+      for (const p of pendingPatches) applyPatch(fresh, p.key, p.next);
+      dbCache = fresh;
+    } finally {
+      loadingFindings = false;
+      pendingPatches = [];
+    }
+  }
+  return Array.from(dbCache.values());
+}
+
 // Serialize renders: a full table rebuild is async (awaits storage), so two
 // overlapping calls would race — each clearing the table and restoring a stale
 // scroll position, which is what made the page jump up and down. Coalesce any
 // call that arrives mid-render into a single follow-up pass.
 let rendering = false;
 let renderQueued = false;
-async function render() {
-  if (rendering) { renderQueued = true; return; }
+let renderQueuedReload = false;
+async function render(reload) {
+  if (rendering) { renderQueued = true; renderQueuedReload = renderQueuedReload || !!reload; return; }
   rendering = true;
   try {
-    await doRender();
+    await doRender(!!reload);
   } finally {
     rendering = false;
-    if (renderQueued) { renderQueued = false; render(); }
+    if (renderQueued) {
+      const again = renderQueuedReload;
+      renderQueued = false;
+      renderQueuedReload = false;
+      render(again);
+    }
   }
 }
 
-async function doRender() {
-  const scrollY = window.scrollY; // preserve position across rebuilds
-  const db = await getDb();
-  const coll = await getCollection();
-  savedKeys = new Set(coll.items.map((i) => i.key));
-  currentFindings = db.findings.slice();
+// Deferred row appends, flushed in chunks. A page of 25 rows lands in one go; a
+// page of thousands ("All") shows its first rows at once and fills in the rest
+// across timer ticks so the tab never freezes while it builds.
+const FIRST_ROW_CHUNK = 120;
+const NEXT_ROW_CHUNK = 150;
+let rowsJob = 0;
+function flushRows(emit, scrollY) {
+  const job = ++rowsJob;
+  let i = 0;
+  const step = (n) => { const end = Math.min(i + n, emit.length); for (; i < end; i++) emit[i](); };
+  step(FIRST_ROW_CHUNK);
+  // Put the user back where they were (as far as the rows built so far allow).
+  window.scrollTo(0, scrollY);
+  if (i >= emit.length) return;
+  // The page keeps growing to its full height, so keep restoring until the saved
+  // position is reachable — but never fight the user: `lastPos` is where WE left
+  // the page, so if it has moved since, they scrolled and are left alone.
+  let lastPos = window.scrollY;
+  let restoreDone = scrollY === 0 || lastPos >= scrollY - 2;
+  const restoreScroll = () => {
+    if (restoreDone) return;
+    if (Math.abs(window.scrollY - lastPos) > 2) { restoreDone = true; return; }
+    window.scrollTo(0, scrollY);
+    lastPos = window.scrollY;
+    if (lastPos >= scrollY - 2) restoreDone = true;
+  };
+  const more = () => {
+    if (job !== rowsJob) return; // a newer render replaced this table
+    step(NEXT_ROW_CHUNK);
+    restoreScroll();
+    if (i < emit.length) setTimeout(more, 0);
+  };
+  setTimeout(more, 0);
+}
+
+async function doRender(reload) {
+  const all = await loadFindings(reload);
+  if (reload || collDirty) {
+    collDirty = false; // cleared first: a change landing during the read re-arms it
+    const coll = await getCollection();
+    savedKeys = new Set(coll.items.map((i) => i.key));
+  }
+  currentFindings = all;
   const q = (els.filter.value || '').toLowerCase().trim();
   const matchesQuery = (f) => matchesFreeText(f, q);
   // Heuristic 'unknown' findings live in their own tab so they don't drown the
@@ -667,7 +770,7 @@ async function doRender() {
     if (!matchesQuery(f) || !matchesStatFilter(f)) return false;
     if (providerVal && f.provider !== providerVal) return false;
     if (riskVal) {
-      const rl = assessRisk(f.audits, f.provider).level;
+      const rl = riskFor(f).level;
       if (rl !== riskVal) return false;
     }
     if (statusVal === 'audited' && !(f.audits && f.audits.length)) return false;
@@ -676,9 +779,9 @@ async function doRender() {
   });
 
   // Sorting helpers
-  const loggedTs = (f) => new Date(f.firstSeen).getTime() || 0;
-  const lastTs = (f) => new Date(f.lastSeen).getTime() || 0;
-  const riskOf = (f) => RISK_RANK[assessRisk(f.audits, f.provider).level] ?? 3;
+  const loggedTs = (f) => tsFor(f).first;
+  const lastTs = (f) => tsFor(f).last;
+  const riskOf = (f) => RISK_RANK[riskFor(f).level] ?? 3;
 
   let byItem, groupSort;
   if (sortByVal === 'last-seen') {
@@ -708,7 +811,10 @@ async function doRender() {
   groupArr.sort(groupSort);
 
   renderStats(known);
+  // Read after the awaits above, so a scroll made during a slow load is honoured.
+  const scrollY = window.scrollY; // preserve position across rebuilds
   els.rows.innerHTML = '';
+  const emit = []; // deferred appends for this render, flushed by flushRows()
   els.empty.style.display = items.length ? 'none' : 'block';
 
   // ---- Pagination: flatten groups into an ordered key list ----
@@ -748,7 +854,7 @@ async function doRender() {
     const c = { critical: 0, high: 0, restricted: 0, closed: 0, unaudited: 0 };
     arr.forEach((f) => {
       if (!f.audits || !f.audits.length) { c.unaudited++; return; }
-      const lv = assessRisk(f.audits, f.provider).level;
+      const lv = riskFor(f).level;
       if (lv === 'critical') c.critical++;
       else if (lv === 'high') c.high++;
       else if (lv === 'restricted') c.restricted++;
@@ -815,17 +921,19 @@ async function doRender() {
       saveCollapsed();
       render();
     });
-    els.rows.appendChild(hdr);
+    emit.push(() => els.rows.appendChild(hdr));
     if (collapsed) return;
 
     pageFindings.forEach((f) => {
-      els.rows.appendChild(buildRow(f));
-      if (expanded.has(f.id)) {
-        const dr = document.createElement('tr');
-        dr.className = 'detail-row';
-        dr.appendChild(detailTable(f));
-        els.rows.appendChild(dr);
-      }
+      emit.push(() => {
+        els.rows.appendChild(buildRow(f));
+        if (expanded.has(f.id)) {
+          const dr = document.createElement('tr');
+          dr.className = 'detail-row';
+          dr.appendChild(detailTable(f));
+          els.rows.appendChild(dr);
+        }
+      });
     });
   });
 
@@ -836,7 +944,7 @@ async function doRender() {
       render();
     });
 
-  window.scrollTo(0, scrollY); // keep the user where they were
+  flushRows(emit, scrollY); // also restores the scroll position (keeps the user where they were)
 }
 
 // ---- Unknown / heuristic tab ----------------------------------------------
@@ -858,6 +966,8 @@ tabBtns.forEach((btn) => {
     const tab = btn.dataset.tab;
     keysPanel.hidden = tab !== 'keys';
     unknownPanel.hidden = tab !== 'unknown';
+    // The unknown list is not built while its tab is hidden; catch it up now.
+    if (tab === 'unknown' && ukDirty) renderUnknownCurrent();
   });
 });
 
@@ -936,7 +1046,7 @@ function buildUnknownRow(f) {
   const delBtn = document.createElement('button');
   delBtn.className = 'btn danger small';
   delBtn.textContent = 'Delete';
-  delBtn.addEventListener('click', async () => { await deleteFinding(f.id); render(); });
+  delBtn.addEventListener('click', async () => { await deleteFinding(f.id); render(true); });
   head.appendChild(delBtn);
 
   row.appendChild(head);
@@ -960,6 +1070,7 @@ function buildUnknownRow(f) {
 // Re-render the unknown tab from the last-known data without a full dashboard
 // rebuild (used by in-tab toggles so the page doesn't jump).
 let lastUnknown = [];
+let ukDirty = false; // data changed while the unknown tab was hidden
 function renderUnknownCurrent() {
   const q = (els.filter.value || '').toLowerCase().trim();
   const matchesQuery = (f) => matchesFreeText(f, q);
@@ -970,6 +1081,10 @@ function renderUnknown(unknown, matchesQuery) {
   lastUnknown = unknown;
   if (unknownCountEl) unknownCountEl.textContent = unknown.length ? String(unknown.length) : '';
   if (!unknownList) return;
+  // Heuristic matches can be the bulk of the data; don't build their DOM while
+  // the user is looking at the keys tab (the tab switch renders it on demand).
+  if (unknownPanel.hidden) { ukDirty = true; return; }
+  ukDirty = false;
   const items = unknown.filter(matchesQuery);
 
   // Group by domain (most matches first) — third-party scripts cluster here.
@@ -984,7 +1099,7 @@ function renderUnknown(unknown, matchesQuery) {
 
   // Sort within each group before flattening for stable pagination order.
   groupArr.forEach(([, list]) => {
-    list.sort((a, b) => (new Date(b.lastSeen) - new Date(a.lastSeen)) || a.key.localeCompare(b.key));
+    list.sort((a, b) => (tsFor(b).last - tsFor(a).last) || a.key.localeCompare(b.key));
   });
 
   unknownStats.innerHTML =
@@ -1058,7 +1173,7 @@ function renderUnknown(unknown, matchesQuery) {
       e.stopPropagation();
       if (!window.confirm('Delete all ' + fullList.length + ' heuristic matches from ' + domain + '?')) return;
       for (const f of fullList) await deleteFinding(f.id);
-      render();
+      render(true);
     });
     right.appendChild(delAll);
     hdr.appendChild(right);
@@ -1138,7 +1253,7 @@ async function auditGroup(findings, btn) {
     btn.disabled = false;
     btn.textContent = label;
   }
-  render();
+  render(true);
   const suffix = auditAborted ? ' (cancelled)' : '';
   toast('Audited ' + done + ' keys in this domain' + suffix);
 }
@@ -1153,7 +1268,7 @@ async function ignoreDomain(domain) {
   const saved = await setIgnoreDomains(current.concat(domain));
   const res = await purgeIgnored(saved);
   loadIgnore(); // refresh the settings textarea
-  render();
+  render(true);
   toast('Ignoring ' + domain + ' — removed ' + (res ? res.removed : 0) +
     ' key' + ((res && res.removed === 1) ? '' : 's'));
 }
@@ -1220,7 +1335,7 @@ document.getElementById('importFile').addEventListener('change', async (ev) => {
     const data = JSON.parse(text);
     const res = await importDb(data);
     toast('Imported / merged ' + (res ? res.merged : 0) + ' findings');
-    render();
+    render(true);
   } catch (e) {
     toast('Import failed: invalid JSON');
   }
@@ -1231,7 +1346,7 @@ document.getElementById('clearBtn').addEventListener('click', async () => {
   if (!window.confirm('Permanently delete ALL logged findings and audit history?')) return;
   await clearAll();
   expanded.clear();
-  render();
+  render(true);
   toast('Cleared all findings');
 });
 
@@ -1257,12 +1372,18 @@ document.getElementById('auditAllBtn').addEventListener('click', async () => {
     btn.disabled = false;
     btn.textContent = 'Audit all';
   }
-  render();
+  render(true);
   const suffix = auditAborted ? ' (cancelled)' : '';
   toast('Audited ' + done + ' keys' + suffix);
 });
 
-els.filter.addEventListener('input', () => { currentPage = 0; ukCurrentPage = 0; render(); });
+// Debounced: filtering re-sorts and rebuilds the table, so wait for a pause in
+// typing instead of doing it on every keystroke.
+let filterTimer = null;
+els.filter.addEventListener('input', () => {
+  clearTimeout(filterTimer);
+  filterTimer = setTimeout(() => { currentPage = 0; ukCurrentPage = 0; render(); }, 150);
+});
 
 // Filter / sort dropdowns — all reset to page 0 on change.
 ['providerFilter', 'riskFilter', 'statusFilter', 'sortBy'].forEach((id) => {
@@ -1292,24 +1413,47 @@ document.getElementById('ignoreSave').addEventListener('click', async () => {
   ignoreInput.value = saved.join('\n');
   ignoreStatus.textContent = 'Saved ' + saved.length + ' custom domain' + (saved.length === 1 ? '' : 's') +
     '; removed ' + (res ? res.removed : 0) + ' stored key' + ((res && res.removed === 1) ? '' : 's') + '.';
-  render();
+  render(true);
 });
 
 // Re-render if storage changes while the dashboard is open. A batch audit fires
 // one storage write per key (times every saved key), so re-rendering on each
-// would thrash the whole table dozens of times a second. Debounce, and skip
-// entirely while an audit is running — those flows repaint themselves when done.
+// would thrash the whole table dozens of times a second. Throttle (a pending
+// refresh is never pushed back, so a crawl that writes continuously still gets
+// a repaint every AUTO_RENDER_MS), skip entirely while an audit is running —
+// those flows repaint themselves when done — and hold off while the tab is hidden.
+const AUTO_RENDER_MS = 750;
 let autoRenderTimer = null;
+let renderWhenVisible = false;
 function scheduleAutoRender() {
-  clearTimeout(autoRenderTimer);
+  if (autoRenderTimer) return;
   autoRenderTimer = setTimeout(() => {
     autoRenderTimer = null;
-    if (auditing === 0) render();
-  }, 200);
+    if (auditing !== 0) return;
+    if (document.hidden) { renderWhenVisible = true; return; }
+    render();
+  }, AUTO_RENDER_MS);
 }
 
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && renderWhenVisible) { renderWhenVisible = false; render(); }
+});
+
+// Findings live one-per-record in storage; patch just the records that changed
+// into the in-memory cache (render() then reuses it instead of re-reading all).
 chrome.storage.onChanged.addListener((changes, area) => {
-  if (area === 'local' && (changes.gaks_db || changes.gaks_collection)) scheduleAutoRender();
+  if (area !== 'local') return;
+  let touched = false;
+  for (const k of Object.keys(changes)) {
+    if (!k.startsWith(REC_PREFIX)) continue;
+    touched = true;
+    const key = k.slice(REC_PREFIX.length);
+    const next = changes[k].newValue;
+    if (loadingFindings) pendingPatches.push({ key, next });
+    if (dbCache) applyPatch(dbCache, key, next);
+  }
+  if (changes.gaks_collection) { collDirty = true; touched = true; }
+  if (touched) scheduleAutoRender();
 });
 
 loadIgnore();

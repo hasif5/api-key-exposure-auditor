@@ -1,4 +1,4 @@
-import { getDb, findingId, getCollection, saveToCollection, removeFromCollection } from '../lib/store.js';
+import { getDb, getFindings, findingId, getCollection, saveToCollection, removeFromCollection } from '../lib/store.js';
 import { assessRisk } from '../lib/providers.js';
 
 const CLASS_HELP = {
@@ -346,21 +346,8 @@ async function getTabKeys() {
   return new Set();
 }
 
-async function render() {
-  const db = await getDb();
-  const coll = await getCollection();
-  savedKeys = new Set(coll.items.map((i) => i.key));
-  let origin = '';
-  try { origin = activeTab && activeTab.url ? new URL(activeTab.url).origin : ''; } catch (e) { origin = ''; }
-  els.origin.textContent = origin || 'this page';
-
-  // Show the keys actually associated with this tab (what the badge counts),
-  // which includes keys found in cross-origin frames / network / scripts.
-  // Fall back to an exact-origin match so nothing is missed if the tab-key
-  // map was lost (e.g. right after the worker restarted).
-  const tabKeySet = await getTabKeys();
-  const onTab = db.findings.filter((f) =>
-    tabKeySet.has(f.key) || (origin && (f.origins || []).includes(origin)));
+// Paint the list for the given findings (everything already decided as "on this tab").
+function paintList(onTab) {
   // Heuristic 'unknown' matches are noisy (JWTs, hashes, …) — keep the popup to
   // real, auditable provider keys. They remain available in the dashboard.
   const items = onTab.filter((f) => f.provider !== 'unknown');
@@ -389,6 +376,41 @@ async function render() {
     els.list.appendChild(note);
   }
   els.count.textContent = items.length + (items.length === 1 ? ' key' : ' keys');
+}
+
+// render() can be triggered again (audit finished, collection toggled, the delayed
+// refresh) while an earlier one is still reading storage; only the newest paints.
+let renderSeq = 0;
+
+async function render() {
+  const seq = ++renderSeq;
+  const coll = await getCollection();
+  savedKeys = new Set(coll.items.map((i) => i.key));
+  let origin = '';
+  try { origin = activeTab && activeTab.url ? new URL(activeTab.url).origin : ''; } catch (e) { origin = ''; }
+  els.origin.textContent = origin || 'this page';
+
+  // Show the keys actually associated with this tab (what the badge counts),
+  // which includes keys found in cross-origin frames / network / scripts.
+  // Fall back to an exact-origin match so nothing is missed if the tab-key
+  // map was lost (e.g. right after the worker restarted).
+  const tabKeySet = await getTabKeys();
+  // Fast path: the tab's own keys are a handful of targeted reads, so paint them
+  // first instead of making the popup wait for a scan of every stored finding.
+  let painted = [];
+  if (tabKeySet.size) {
+    const quick = await getFindings(Array.from(tabKeySet));
+    if (seq !== renderSeq) return;
+    // Don't flash "No API keys detected" while the fuller scan below is pending.
+    if (quick.some((f) => f.provider !== 'unknown')) { paintList(quick); painted = quick; }
+  }
+  // Full pass: also surfaces keys known for this origin from other pages/visits.
+  const db = await getDb();
+  if (seq !== renderSeq) return;
+  const onTab = db.findings.filter((f) =>
+    tabKeySet.has(f.key) || (origin && (f.origins || []).includes(origin)));
+  const sig = (arr) => arr.map((f) => f.key).sort().join('\n');
+  if (!painted.length || sig(onTab) !== sig(painted)) paintList(onTab);
 }
 
 async function init() {

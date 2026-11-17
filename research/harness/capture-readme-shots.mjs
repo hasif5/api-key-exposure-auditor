@@ -134,7 +134,8 @@ async function main() {
 
   const tab = await swEval("chrome.tabs.query({ url: '" + main.origin + "/*' }).then((t) => t.length ? { id: t[0].id, url: t[0].url } : null)");
   if (!tab) throw new Error('fixture tab not found');
-  const db = await swEval("chrome.storage.local.get('gaks_db').then((r) => r.gaks_db || { findings: [] })");
+  // One record per finding under "gaks_f:<key>" (lib/store.js REC_PREFIX); an old build's single "gaks_db" blob is still read.
+  const db = await swEval("chrome.storage.local.get(null).then((r) => ({ findings: Object.keys(r).filter((k) => k.indexOf('gaks_f:') === 0).map((k) => r[k]).concat((r.gaks_db && r.gaks_db.findings) || []) }))");
   console.log('findings stored: ' + db.findings.length + '; popup tab: ' + tab.url);
 
   // --- popup: real popup.html as a page, with the active-tab lookup pointed at the fixture tab
