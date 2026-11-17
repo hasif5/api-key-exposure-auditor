@@ -31,6 +31,12 @@
     },
     {
       "matches": ["<all_urls>"],
+      "js": ["content/bridge.js"],
+      "run_at": "document_start",
+      "all_frames": true
+    },
+    {
+      "matches": ["<all_urls>"],
       "js": ["content/patterns.js", "content/content.js"],
       "run_at": "document_idle",
       "all_frames": true

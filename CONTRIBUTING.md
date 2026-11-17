@@ -42,7 +42,7 @@ See the [README](./README.md#project-structure) for the layout.
 
 - Syntax-check changed files:
   ```bash
-  node --check content/patterns.js content/content.js content/intercept.js   # plain scripts
+  node --check content/patterns.js content/content.js content/intercept.js content/bridge.js   # plain scripts
   node --input-type=module --check < lib/audit.js                            # ES modules
   ```
 - Run the logic regression tests (detection/providers/store/ignore/parity):

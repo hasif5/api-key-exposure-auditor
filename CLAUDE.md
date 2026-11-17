@@ -50,9 +50,18 @@ modules, so detection logic is deliberately duplicated and **must be kept in syn
 - **Module world** (`background.js` + `lib/*.js`, popup, dashboard, collection):
   ES modules. Detection regexes live in `lib/providers.js` and `lib/keys.js`.
 
-> If you touch a detection regex or the provider list, change it in **both**
-> `content/patterns.js` and `lib/providers.js`. The test suite has a parity check,
-> but the duplication is intentional and easy to miss.
+> If you touch a detection regex, a heuristic filter, a decode layer, or the
+> provider list, change it in **all three** copies: `content/patterns.js`,
+> `content/intercept.js` (MAIN world) and `lib/providers.js`. The test suite has
+> a parity check, but the duplication is intentional and easy to miss.
+
+`content/intercept.js` runs in the page's MAIN world, so its findings must not
+travel over `window.postMessage` (page scripts could read or forge them).
+`content/bridge.js` (isolated world, `document_start`) hands it a random event
+name before any page script runs; findings are dispatched as CustomEvents under
+that name and buffered until `content.js` subscribes. Test fixtures must look
+like real keys (seeded random bodies): placeholder-shaped values such as one
+repeated character or `…EXAMPLE…` are filtered out by `isPlaceholderKey`.
 
 ### Data flow
 
@@ -73,7 +82,8 @@ content.js  ──GAKS_FINDINGS / GAKS_SCRIPTS──▶  background.js (service 
 
 - **`background.js`** — the orchestrator. Owns: webRequest sniffing, the bounded
   recursive asset-crawl queue (`MAX_DEPTH = 3`, `SCRIPT_CONCURRENCY = 4`,
-  `MAX_SCRIPT_BYTES = 4 MB`), source-map following (`scanSourceMap` /
+  `MAX_SCRIPT_BYTES = 16 MB`, scanned in 1 MB windows via `detectKeysWindowed`),
+  the soft-404 guard for guessed URLs (`isFallbackPage`), source-map following (`scanSourceMap` /
   `followReferences`), common-config-path probing, per-tab badge counts, and the
   `chrome.runtime.onMessage` router (`GAKS_FINDINGS`, `GAKS_SCRIPTS`, `GAKS_AUDIT`,
   `GAKS_AUDIT_RAW`, `GAKS_GET_TAB_KEYS`, `GAKS_GET_DB`).

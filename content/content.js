@@ -16,7 +16,6 @@
   if (window.__GAKS_CONTENT_LOADED__) return;
   window.__GAKS_CONTENT_LOADED__ = true;
 
-  var pageUrl = location.href;
   var origin = location.origin;
 
   // key -> { source, snippet, mapsContext } already reported, to avoid resends.
@@ -120,6 +119,54 @@
     return out;
   }
 
+  var ASSET_EXT_RE = /\.(?:js|mjs|cjs|json|map|css)(?:[?#]|$)/i;
+
+  // Code/config assets the page actually loaded, from resource timing. Chunks
+  // pulled in by import(), module graphs and Worker scripts never appear as
+  // <script src>, and their names are often built at runtime, so neither the
+  // DOM nor the worker's reference crawl can find them. API calls (fetch/XHR)
+  // are left out: their bodies are scanned in-page, and re-requesting them
+  // from the worker could have side effects.
+  function resourceAssetUrls() {
+    var out = [];
+    var entries = performance.getEntriesByType('resource') || [];
+    for (var i = 0; i < entries.length && out.length < 300; i++) {
+      var e = entries[i];
+      var name = e.name || '';
+      if (!/^https?:/i.test(name)) continue;
+      var t = e.initiatorType;
+      if (t === 'fetch' || t === 'xmlhttprequest' || t === 'beacon') continue;
+      if (t === 'script' || ASSET_EXT_RE.test(name)) out.push(name);
+    }
+    return out;
+  }
+
+  // Same-origin asset paths named inside inline <script> text (new
+  // Worker("/w.js"), importScripts, lazy-loader tables). The worker follows
+  // references found in fetched files, but never sees inline script text.
+  var INLINE_REF_RE = /["'`(]([a-zA-Z0-9_./\-]+\.(?:js|mjs|cjs|json|map))(?:\?[^"'`)\s]*)?["'`)]/g;
+  function inlineScriptRefs() {
+    var out = [];
+    var scripts = document.querySelectorAll('script:not([src])');
+    var budget = 1024 * 1024;
+    for (var i = 0; i < scripts.length && budget > 0 && out.length < 60; i++) {
+      var type = (scripts[i].getAttribute('type') || '').toLowerCase();
+      if (type && !/javascript|module|ecmascript/.test(type)) continue; // JSON/LD, templates
+      var text = scripts[i].textContent || '';
+      if (text.length > budget) text = text.slice(0, budget);
+      budget -= text.length;
+      INLINE_REF_RE.lastIndex = 0;
+      var m;
+      while ((m = INLINE_REF_RE.exec(text)) !== null && out.length < 60) {
+        try {
+          var abs = new URL(m[1], document.baseURI);
+          if (abs.origin === location.origin) out.push(abs.href);
+        } catch (e) { /* not a URL */ }
+      }
+    }
+    return out;
+  }
+
   // Forward external script URLs to the worker, which fetches and scans the
   // bundle bodies (catches keys baked into minified JS, not just inline markup).
   function reportScripts() {
@@ -133,10 +180,12 @@
         if (/stylesheet|preload|modulepreload|prefetch|manifest/.test(rel)) add(l.href);
       });
     } catch (e) { return; }
+    try { resourceAssetUrls().forEach(add); } catch (e) { /* ignore */ }
+    try { inlineScriptRefs().forEach(add); } catch (e) { /* ignore */ }
     if (!urls.length) return;
     try {
       chrome.runtime.sendMessage(
-        { type: 'GAKS_SCRIPTS', pageUrl: pageUrl, origin: origin, urls: urls },
+        { type: 'GAKS_SCRIPTS', pageUrl: location.href, origin: origin, urls: urls },
         function () { void chrome.runtime.lastError; }
       );
     } catch (e) { /* context invalidated */ }
@@ -162,7 +211,7 @@
 
     var payload = {
       type: 'GAKS_FINDINGS',
-      pageUrl: pageUrl,
+      pageUrl: location.href, // live, so SPA route changes are attributed correctly
       origin: origin,
       findings: fresh.map(function (r) {
         return {
@@ -288,12 +337,13 @@
     // Bridge network-interception findings from the MAIN-world interceptor.
     // Always forward to the background worker — even if the key was already seen
     // via DOM/storage, upsertFinding will merge the 'network' source tag.
-    window.addEventListener('message', function (ev) {
-      if (ev.source !== window) return;
-      if (!ev.data || ev.data.type !== '__GAKS_NET_FINDING__') return;
-      var d = ev.data;
+    // They arrive over the private channel owned by bridge.js (not
+    // window.postMessage, which any page script could read or forge); anything
+    // captured before this point was buffered there.
+    if (typeof GAKS_BRIDGE !== 'undefined') GAKS_BRIDGE.onFinding(function (d) {
+      if (!d || d.type !== '__GAKS_NET_FINDING__') return;
       var key = d.key;
-      if (!key) return;
+      if (!key || typeof key !== 'string') return;
       var netKey = 'net:' + key + ':' + (d.source || '');
       if (reported[netKey]) return;
       reported[netKey] = true;
@@ -308,7 +358,7 @@
       try {
         chrome.runtime.sendMessage({
           type: 'GAKS_FINDINGS',
-          pageUrl: pageUrl,
+          pageUrl: location.href,
           origin: origin,
           findings: [{
             key: key,
@@ -321,8 +371,6 @@
         }, function () { void chrome.runtime.lastError; });
       } catch (e) { /* context invalidated */ }
     });
-    // Flush any findings the interceptor captured before we were ready.
-    try { window.postMessage({ type: '__GAKS_NET_FLUSH__' }, '*'); } catch (e) { /* ignore */ }
 
     // Initial scan once the page settles.
     scanAndReport();

@@ -397,6 +397,17 @@ function buildRow(f) {
     ref.textContent = f.snippet;
     keyTd.appendChild(ref);
   }
+  // The same key on other surfaces: one extra reference per source tag.
+  if (f.snippets) {
+    for (const src of Object.keys(f.snippets)) {
+      const text = f.snippets[src];
+      if (!text || text === f.snippet) continue;
+      const more = document.createElement('div');
+      more.className = 'key-ref';
+      more.textContent = src + ': ' + text;
+      keyTd.appendChild(more);
+    }
+  }
 
   // Seen on — merged: origins, clickable source URLs, sources, timestamps
   const seenTd = document.createElement('td');

@@ -11,7 +11,7 @@
 import { upsertFinding, setAudits, getFinding, getDb, migrate,
   getIgnoreDomains, purgeIgnored } from './lib/store.js';
 import { isMapsContext } from './lib/keys.js';
-import { detectKeys, getProvider, providerForKey } from './lib/providers.js';
+import { detectKeys, detectKeysWindowed, getProvider, providerForKey } from './lib/providers.js';
 import { urlHostIsIgnored } from './lib/ignore.js';
 
 // One-time cleanup: collapse any duplicates left by an earlier version.
@@ -34,19 +34,24 @@ function pageIgnored(urlOrOrigin) {
   return urlHostIsIgnored(urlOrOrigin, userIgnore);
 }
 
-const KEY_RE = /^(?:AIza[0-9A-Za-z_-]{35}|AQ\.[A-Za-z0-9_-]{40,})$/;
 const MAPS_HINTS = ['maps.googleapis.com', 'maps.google.com', 'maps.gstatic.com', '/maps/'];
 
 // Deep resource-scanning limits (keep it bounded but go deep). Peak service-
 // worker memory is roughly SCRIPT_CONCURRENCY × MAX_SCRIPT_BYTES of text held
-// at once, so these are kept lean (≈16 MB) — most bundles are well under 4 MB.
+// at once. Unminified dev bundles with inline source maps routinely pass
+// 4 MB, so the cap is 16 MB; the text is scanned in 1 MB windows.
 const SCRIPT_FETCH_TIMEOUT = 12000;
-const MAX_SCRIPT_BYTES = 4 * 1024 * 1024; // scan at most 4 MB per resource
+const MAX_SCRIPT_BYTES = 16 * 1024 * 1024; // scan at most 16 MB per resource
 const MAX_SCRIPT_CACHE = 8000;            // distinct URLs remembered
 const SCRIPT_CONCURRENCY = 4;
 const MAX_DEPTH = 3;                       // page → bundle → chunk/source-map → …
 const DERIVED_PER_RESOURCE = 30;           // referenced assets followed per file
+const DERIVED_PER_MANIFEST = 250;          // …or per build manifest (lists every route chunk)
+const MAX_FETCHES_PER_ORIGIN = 1000;       // total crawl budget per page origin
+const MAX_MAP_GUESSES_PER_ORIGIN = 40;     // blind "<file>.js.map" attempts
 const fetchedScripts = new Set();
+const originFetches = new Map();
+const originMapGuesses = new Map();
 const scriptQueue = [];
 let scriptActive = 0;
 
@@ -58,6 +63,10 @@ const COMMON_PATHS = [
   '/assets/config.json', '/static/config.json', '/env.js', '/env.json',
   '/firebase-config.json', '/firebaseConfig.js', '/manifest.json',
   '/.well-known/assetlinks.json',
+  // Runtime-injected env files and build manifests. A manifest lists every
+  // chunk of the build, including routes the user never opened.
+  '/__ENV.js', '/env-config.js', '/runtime-config.json',
+  '/asset-manifest.json', '/.vite/manifest.json',
   // Exposed configs/dumps that commonly carry live secrets — fetched and
   // scanned for keys like any other config asset.
   '/.git/config', '/wp-config.php.bak', '/config.php.bak',
@@ -132,88 +141,63 @@ function clearTabKeys(tabId) {
 
 // ---- Network observation ---------------------------------------------------
 
-chrome.webRequest.onBeforeRequest.addListener(
-  (details) => {
-    let url;
-    try { url = new URL(details.url); } catch (e) { return; }
-    const key = url.searchParams.get('key');
-    if (!key || !KEY_RE.test(key)) return;
-    if (pageIgnored(details.initiator)) return; // skip ignored visiting domains
+// The in-page interceptor only sees fetch/XHR made by the page's own window.
+// Requests from Web/Service Workers, <img>/<script> tags, and CSS are visible
+// here only, so every request URL and request header is checked — for all
+// hosts and all validated providers, not just Google and the AI APIs.
 
-    const origin = details.initiator || url.origin;
+// One cheap regex decides whether the full detector runs at all.
+const KEY_PREFILTER_RE = /AIza|AQ\.|sk-|xai-|AKIA|ASIA|gh[pousr]_|github_pat_|glpat-|xox[baprs]-|[sr]k_(?:live|test)_|AC[0-9a-fA-F]{32}/;
+const OWN_ORIGIN = 'chrome-extension://' + chrome.runtime.id;
+
+// Record provider keys found in one piece of request metadata. Heuristic
+// ('unknown') hits are left out: a request legitimately carries the user's own
+// session tokens, which are not leaked secrets.
+function sniffRequest(details, text, where) {
+  for (const h of detectKeys(text)) {
+    if (h.provider === 'unknown') continue;
     upsertFinding({
-      key,
-      provider: 'google',
-      origin,
+      key: h.key,
+      provider: h.provider,
+      secret: h.secret,
+      origin: details.initiator || safeOrigin(details.url),
       pageUrl: details.initiator || details.url,
       source: 'network',
-      snippet: details.url.split('?')[0] + '?…key=' + key.slice(0, 10) + '…',
-      mapsContext: isMapsUrl(details.url)
+      snippet: details.url.split('?')[0] + ' — ' + where,
+      mapsContext: h.provider === 'google' && isMapsUrl(details.url)
     });
-    noteKeyForTab(details.tabId, key);
+    noteKeyForTab(details.tabId, h.key);
+  }
+}
+
+// True for requests that must not be sniffed: the extension's own (audit
+// probes and crawl fetches carry the keys being examined) and ignored pages.
+function skipRequest(details) {
+  if (details.initiator === OWN_ORIGIN) return true;
+  return pageIgnored(details.initiator || details.url);
+}
+
+chrome.webRequest.onBeforeRequest.addListener(
+  (details) => {
+    if (!KEY_PREFILTER_RE.test(details.url) || skipRequest(details)) return;
+    sniffRequest(details, details.url, 'request URL');
   },
-  { urls: ['*://*.googleapis.com/*', '*://maps.google.com/*', '*://maps.gstatic.com/*'] },
+  { urls: ['<all_urls>'] },
   []
 );
 
-// Modern Google APIs (Routes, Places New, etc.) pass the key in the
-// `X-Goog-Api-Key` request header rather than a `key=` query param.
-const KEY_IN_TEXT_RE = /(?:AIza[0-9A-Za-z_-]{35}|AQ\.[A-Za-z0-9_-]{40,})/;
 chrome.webRequest.onBeforeSendHeaders.addListener(
   (details) => {
-    if (pageIgnored(details.initiator)) return; // skip ignored visiting domains
-    const headers = details.requestHeaders || [];
-    for (const h of headers) {
-      const name = (h.name || '').toLowerCase();
-      const val = h.value || '';
-      if (name !== 'x-goog-api-key' && !KEY_IN_TEXT_RE.test(val)) continue;
-      const m = val.match(KEY_IN_TEXT_RE);
-      if (!m) continue;
-      const key = m[0];
-      const origin = details.initiator || safeOrigin(details.url);
-      upsertFinding({
-        key,
-        provider: 'google',
-        origin,
-        pageUrl: details.initiator || details.url,
-        source: 'network',
-        snippet: details.url.split('?')[0] + ' — X-Goog-Api-Key header',
-        mapsContext: isMapsUrl(details.url)
-      });
-      noteKeyForTab(details.tabId, key);
-    }
-  },
-  { urls: ['*://*.googleapis.com/*'] },
-  ['requestHeaders']
-);
-
-// OpenAI / Anthropic keys travel in Authorization: Bearer / x-api-key headers.
-const BEARER_KEY_RE = /(sk-ant-[A-Za-z0-9_-]{90,}|sk-or-(?:v1-)?[A-Za-z0-9]{40,}|xai-[A-Za-z0-9]{40,}|sk-(?:proj|svcacct|admin)-[A-Za-z0-9_-]{20,}|sk-[A-Za-z0-9]{40,})/;
-chrome.webRequest.onBeforeSendHeaders.addListener(
-  (details) => {
-    if (pageIgnored(details.initiator)) return;
+    let skip = null;
     for (const h of details.requestHeaders || []) {
-      const name = (h.name || '').toLowerCase();
-      if (name !== 'authorization' && name !== 'x-api-key') continue;
-      const m = (h.value || '').match(BEARER_KEY_RE);
-      if (!m) continue;
-      const key = m[1];
-      const provider = providerForKey(key);
-      if (!provider) continue;
-      const origin = details.initiator || safeOrigin(details.url);
-      upsertFinding({
-        key,
-        provider,
-        origin,
-        pageUrl: details.initiator || details.url,
-        source: 'network',
-        snippet: details.url.split('?')[0] + ' — ' + (name === 'x-api-key' ? 'x-api-key' : 'Authorization') + ' header',
-        mapsContext: false
-      });
-      noteKeyForTab(details.tabId, key);
+      const val = h.value || '';
+      if (!KEY_PREFILTER_RE.test(val)) continue;
+      if (skip === null) skip = skipRequest(details);
+      if (skip) return;
+      sniffRequest(details, (h.name || '') + ': ' + val, (h.name || 'request') + ' header');
     }
   },
-  { urls: ['*://api.openai.com/*', '*://api.anthropic.com/*', '*://api.x.ai/*', '*://openrouter.ai/*'] },
+  { urls: ['<all_urls>'] },
   ['requestHeaders']
 );
 
@@ -221,7 +205,13 @@ chrome.webRequest.onBeforeSendHeaders.addListener(
 // Response headers and cookies are two more places a key can leak; scan their
 // values and feed any hits into the same findings DB.
 
-const headerScanned = new Set();
+// origin -> keys found in its headers/cookies. Scanned once per origin; the
+// cached keys are re-applied to the badge on later navigations.
+const headerScanned = new Map();
+// tabId -> { keys, ts }: header/cookie hits for a navigation in flight. They
+// are recorded before tabs.onUpdated resets the tab's key set for that same
+// navigation, so the reset handler puts them back.
+const pendingNavKeys = new Map();
 
 chrome.webRequest.onHeadersReceived.addListener(
   (details) => { scanHeadersAndCookies(details).catch(() => {}); },
@@ -233,14 +223,23 @@ async function scanHeadersAndCookies(details) {
   let origin;
   try { origin = new URL(details.url).origin; } catch (e) { return; }
   if (pageIgnored(origin)) return;
-  if (headerScanned.has(origin)) return;
-  headerScanned.add(origin);
+
+  const pend = { keys: new Set(), ts: Date.now() };
+  if (details.tabId >= 0) pendingNavKeys.set(details.tabId, pend);
+  const note = (key) => { pend.keys.add(key); noteKeyForTab(details.tabId, key); };
+
+  const cached = headerScanned.get(origin);
+  if (cached) { cached.forEach(note); return; }
+  const found = [];
+  headerScanned.set(origin, found);
+  if (headerScanned.size > 2000) headerScanned.delete(headerScanned.keys().next().value);
 
   // Response header values.
   const hdrText = (details.responseHeaders || [])
     .map((h) => (h.name || '') + ': ' + (h.value || '')).join('\n');
   for (const h of detectKeys(hdrText)) {
-    noteKeyForTab(details.tabId, h.key);
+    found.push(h.key);
+    note(h.key);
     upsertFinding({
       key: h.key, provider: h.provider || 'google', secret: h.secret,
       origin, pageUrl: details.url, source: 'header',
@@ -253,7 +252,8 @@ async function scanHeadersAndCookies(details) {
     const cookies = await chrome.cookies.getAll({ url: details.url });
     const cookieText = cookies.map((c) => c.name + '=' + c.value).join('\n');
     for (const h of detectKeys(cookieText)) {
-      noteKeyForTab(details.tabId, h.key);
+      found.push(h.key);
+      note(h.key);
       upsertFinding({
         key: h.key, provider: h.provider || 'google', secret: h.secret,
         origin, pageUrl: details.url, source: 'cookie',
@@ -346,7 +346,18 @@ function safeOrigin(u) {
   try { return new URL(u).origin; } catch (e) { return 'unknown'; }
 }
 
-function enqueueScript(rawUrl, origin, pageUrl, tabId, depth) {
+// Count against a per-origin budget held in `map`; false once it is spent.
+function takeBudget(map, origin, max) {
+  const n = map.get(origin) || 0;
+  if (n >= max) return false;
+  map.set(origin, n + 1);
+  if (map.size > 2000) map.delete(map.keys().next().value);
+  return true;
+}
+
+// `probe` marks a guessed URL (common config path, blind source-map guess)
+// rather than one the page or a scanned file actually referenced.
+function enqueueScript(rawUrl, origin, pageUrl, tabId, depth, probe) {
   depth = depth || 0;
   if (depth > MAX_DEPTH) return;
   if (pageIgnored(origin) || pageIgnored(pageUrl)) return; // ignored visiting domain
@@ -355,12 +366,13 @@ function enqueueScript(rawUrl, origin, pageUrl, tabId, depth) {
   if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
   const norm = url.href;
   if (fetchedScripts.has(norm)) return;
+  if (!takeBudget(originFetches, origin, MAX_FETCHES_PER_ORIGIN)) return;
   fetchedScripts.add(norm);
   if (fetchedScripts.size > MAX_SCRIPT_CACHE) {
     const first = fetchedScripts.values().next().value;
     fetchedScripts.delete(first);
   }
-  scriptQueue.push({ url: norm, origin, pageUrl, tabId, depth });
+  scriptQueue.push({ url: norm, origin, pageUrl, tabId, depth, probe: !!probe });
   pumpScriptQueue();
 }
 
@@ -369,7 +381,7 @@ function probeCommonPaths(origin, pageUrl, tabId) {
   if (!origin || origin === 'unknown' || probedOrigins.has(origin)) return;
   if (pageIgnored(origin)) return;
   probedOrigins.add(origin);
-  for (const p of COMMON_PATHS) enqueueScript(origin + p, origin, pageUrl, tabId, 0);
+  for (const p of COMMON_PATHS) enqueueScript(origin + p, origin, pageUrl, tabId, 0, true);
 }
 
 function pumpScriptQueue() {
@@ -384,7 +396,7 @@ function pumpScriptQueue() {
 }
 
 function recordHits(text, job, source, label) {
-  const hits = detectKeys(text);
+  const hits = detectKeysWindowed(text);
   for (const h of hits) {
     noteKeyForTab(job.tabId, h.key);
     upsertFinding({
@@ -407,50 +419,123 @@ function recordHits(text, job, source, label) {
 function scanSourceMap(text, job) {
   let map;
   try { map = JSON.parse(text); } catch (e) { return false; }
-  if (!map || !Array.isArray(map.sourcesContent)) return false;
-  const joined = map.sourcesContent.filter(Boolean).join('\n');
-  if (joined) recordHits(joined, job, 'sourcemap', 'source map');
+  if (!map || typeof map !== 'object') return false;
+  // A plain map carries sourcesContent directly; an indexed map nests one map
+  // per section.
+  const parts = [];
+  const take = (m) => { if (m && Array.isArray(m.sourcesContent)) for (const s of m.sourcesContent) if (s) parts.push(s); };
+  take(map);
+  if (Array.isArray(map.sections)) for (const s of map.sections) take(s && s.map);
+  if (!parts.length) return false;
+  recordHits(parts.join('\n'), job, 'sourcemap', 'source map');
   return true;
+}
+
+// Decode an inline source map (sourceMappingURL=data:application/json;base64,…).
+// Dev builds (webpack eval-source-map, Vite) ship maps this way, so on
+// localhost this is usually the only copy of the original sources.
+function decodeDataUri(uri) {
+  const comma = uri.indexOf(',');
+  if (comma === -1 || uri.length > 24 * 1024 * 1024) return null;
+  const meta = uri.slice(5, comma).toLowerCase();
+  const data = uri.slice(comma + 1);
+  try {
+    if (/;base64/.test(meta)) {
+      const bin = atob(data);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      return new TextDecoder('utf-8', { fatal: false }).decode(bytes);
+    }
+    return decodeURIComponent(data);
+  } catch (e) { return null; }
+}
+
+// The file's source-map reference: the last "//# sourceMappingURL=" (JS) or
+// "/*# sourceMappingURL= */" (CSS) comment, else the SourceMap response header.
+function sourceMapRef(text, headerRef) {
+  const mark = 'sourceMappingURL=';
+  const i = text.lastIndexOf(mark);
+  if (i !== -1 && /[#@]\s*$/.test(text.slice(Math.max(0, i - 4), i))) {
+    let end = i + mark.length;
+    while (end < text.length && !/[\s'"*]/.test(text[end])) end++;
+    const ref = text.slice(i + mark.length, end);
+    if (ref) return ref;
+  }
+  return headerRef || null;
+}
+
+// Base URL for a relative asset path named inside `url`. Build manifests list
+// paths relative to the build root, not to the manifest's own folder.
+function referenceBase(url, ref) {
+  try {
+    const p = new URL(url);
+    const next = p.pathname.indexOf('/_next/static/');
+    if (next !== -1 && ref.indexOf('static/') === 0) return p.origin + p.pathname.slice(0, next) + '/_next/';
+    if (/\/\.vite\/manifest\.json$/.test(p.pathname)) return p.origin + p.pathname.replace(/\.vite\/manifest\.json$/, '');
+  } catch (e) { /* ignore */ }
+  return url;
 }
 
 // Follow references found inside a scanned file: its source map + any asset URLs
 // it names (chunks, JSON config, CSS). Bounded by depth, per-file count, and host.
-function followReferences(text, job) {
+function followReferences(text, job, headerMapRef) {
   const nextDepth = (job.depth || 0) + 1;
   if (nextDepth > MAX_DEPTH) return;
-  let baseHost = '';
-  try { baseHost = new URL(job.url).host; } catch (e) { /* ignore */ }
+  let base = null;
+  try { base = new URL(job.url); } catch (e) { return; }
+  const baseHost = base.host;
   let pageHost = '';
   try { pageHost = new URL(job.pageUrl || job.origin).host; } catch (e) { /* ignore */ }
+  const isMap = /\.map(?:[?#]|$)/i.test(job.url);
 
-  // Source map (//# sourceMappingURL=...).
-  const sm = text.match(/\/\/[#@]\s*sourceMappingURL=([^\s'"]+)/);
-  if (sm && sm[1].indexOf('data:') !== 0) {
-    try { enqueueScript(new URL(sm[1], job.url).href, job.origin, job.pageUrl, job.tabId, nextDepth); } catch (e) { /* ignore */ }
+  // Source map: referenced by comment or header, inline as a data: URI, or —
+  // when the reference was stripped ("hidden" source maps are often still
+  // deployed) — guessed as "<file>.map" for the page's own scripts.
+  if (!isMap) {
+    const ref = sourceMapRef(text, headerMapRef);
+    if (ref && ref.indexOf('data:') === 0) {
+      const inline = decodeDataUri(ref);
+      if (inline) scanSourceMap(inline, job);
+    } else if (ref) {
+      try { enqueueScript(new URL(ref, job.url).href, job.origin, job.pageUrl, job.tabId, nextDepth); } catch (e) { /* ignore */ }
+    } else if (!job.probe && baseHost === pageHost && /\.(?:js|mjs|css)$/i.test(base.pathname) &&
+               takeBudget(originMapGuesses, job.origin, MAX_MAP_GUESSES_PER_ORIGIN)) {
+      enqueueScript(base.origin + base.pathname + '.map', job.origin, job.pageUrl, job.tabId, nextDepth, true);
+    }
   }
 
   // Referenced asset URLs in string literals.
+  const limit = /manifest/i.test(base.pathname) ? DERIVED_PER_MANIFEST : DERIVED_PER_RESOURCE;
   const re = /["'`(]([a-zA-Z0-9_./\-]+\.(?:js|mjs|cjs|json|map|css|txt|wasm))(?:\?[^"'`)\s]*)?["'`)]/g;
   let m, count = 0;
-  while ((m = re.exec(text)) !== null && count < DERIVED_PER_RESOURCE) {
+  while ((m = re.exec(text)) !== null && count < limit) {
     let abs;
-    try { abs = new URL(m[1], job.url).href; } catch (e) { continue; }
-    let host;
-    try { host = new URL(abs).host; } catch (e) { continue; }
+    try { abs = new URL(m[1], referenceBase(job.url, m[1])); } catch (e) { continue; }
     // Stay within the page's host or the resource's own host (don't crawl the web).
-    if (host !== baseHost && host !== pageHost) continue;
-    enqueueScript(abs, job.origin, job.pageUrl, job.tabId, nextDepth);
+    if (abs.host !== baseHost && abs.host !== pageHost) continue;
+    enqueueScript(abs.href, job.origin, job.pageUrl, job.tabId, nextDepth);
     count++;
   }
+}
+
+// A single-page app answers unknown paths with its index.html and HTTP 200.
+// Without this check a guessed path (/.env, <file>.js.map) would "succeed",
+// and every key on the page would be recorded as living in that file.
+function isFallbackPage(text, job) {
+  if (!/^\s*(?:<!doctype html|<html[\s>])/i.test(text.slice(0, 512))) return false;
+  if (/\/phpinfo\.php$/i.test(job.url)) return !/phpinfo\(\)|PHP Version/i.test(text.slice(0, 20000));
+  return job.probe || FOLLOW_EXT_RE.test(job.url);
 }
 
 async function scanScript(job) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), SCRIPT_FETCH_TIMEOUT);
-  let text;
+  let text, headerMapRef = null;
   try {
     const res = await fetch(job.url, { signal: controller.signal, credentials: 'omit' });
     if (!res.ok) return;
+    if (Number(res.headers.get('content-length')) > 2 * MAX_SCRIPT_BYTES) return; // don't buffer a huge download
+    headerMapRef = res.headers.get('sourcemap') || res.headers.get('x-sourcemap');
     const ct = (res.headers.get('content-type') || '').toLowerCase();
     const pathLooksTextual = FOLLOW_EXT_RE.test(job.url) || /\/\.env/.test(job.url);
     // Scan textual payloads (JS/CSS/JSON/text/xml/source maps), or anything whose
@@ -465,6 +550,7 @@ async function scanScript(job) {
   }
   if (!text) return;
   if (text.length > MAX_SCRIPT_BYTES) text = text.slice(0, MAX_SCRIPT_BYTES);
+  if (isFallbackPage(text, job)) return;
 
   // 1) Scan the raw text for keys.
   recordHits(text, job, 'script', '');
@@ -473,7 +559,7 @@ async function scanScript(job) {
     scanSourceMap(text, job);
   }
   // 3) Follow source maps + referenced assets deeper.
-  followReferences(text, job);
+  followReferences(text, job, headerMapRef);
 }
 
 function shortUrl(u) {
@@ -492,9 +578,16 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
   // A new top-level navigation starts a fresh per-tab key set.
   if (changeInfo.status === 'loading' && changeInfo.url) {
     clearTabKeys(tabId);
+    // Header/cookie hits for this navigation were noted before this reset.
+    const pend = pendingNavKeys.get(tabId);
+    if (pend) {
+      pendingNavKeys.delete(tabId);
+      if (Date.now() - pend.ts < 30000) pend.keys.forEach((k) => noteKeyForTab(tabId, k));
+    }
   }
 });
 
 chrome.tabs.onRemoved.addListener((tabId) => {
+  pendingNavKeys.delete(tabId);
   clearTabKeys(tabId);
 });

@@ -102,9 +102,11 @@ The toolbar badge shows the number of distinct keys found on the active tab. Cli
 | **GitLab** | `glpat-...` | Validated via free `GET /api/v4/user` |
 | **Slack** | `xoxb-`/`xoxp-`/`xoxa-`/`xoxr-`/`xoxs-...` | Validated via free `auth.test` (team/user) |
 | **Stripe** | `sk_live_`/`sk_test_`/`rk_live_`/`rk_test_...` | Validated via `GET /v1/account` (live keys flagged distinctly) |
-| **Unknown** (heuristic) | Other vendor token shapes (SendGrid, npm, Shopify, Mailgun, HuggingFace, Replicate, Groq, DigitalOcean, Notion, Linear, Telegram, Discord, Sentry DSN, Mailchimp, Slack webhooks, JWT…), **connection strings with embedded credentials** (`postgres://`, `mongodb+srv://`, `redis://`…), **full private-key blocks** (incl. GCP service-account keys), and high-entropy `secret`/`token`/`apiKey` assignments | Not auto-validated — flagged for manual review with where/how context |
+| **Unknown** (heuristic) | Other vendor token shapes (SendGrid, npm, Shopify, Mailgun, HuggingFace, Replicate, Groq, DigitalOcean, Notion, Linear, Telegram, Discord, Mailchimp, Slack webhooks, JWT…), **connection strings with embedded credentials** (`postgres://`, `mongodb+srv://`, `redis://`…), **full private-key blocks** (incl. GCP service-account keys), **hard-coded `Bearer` / `Basic` authorization values**, and high-entropy assignments to names containing `secret`/`token`/`apiKey`/`password` (including prefixed names such as `REACT_APP_API_KEY` or `openaiApiKey`, and unquoted `.env` lines) | Not auto-validated — flagged for manual review with where/how context |
 
 Bearer-token providers (OpenAI, Anthropic, OpenRouter, xAI) have no IP/referrer restriction mechanism -- any valid key is unconditionally **critical**. **Unknown** findings are heuristic "looks-like-a-secret" matches with no dedicated auditor; each records what pattern matched and which surface it came from.
+
+To keep noise down, a few things are deliberately **not** reported: format-valid placeholders (`sk-xxxx…`, anything containing `EXAMPLE`), references and identifiers assigned to a key name (`process.env.X`, reverse-DNS IDs), expired JWTs, Supabase `anon` JWTs and Sentry DSNs (both public by design), and AWS IAM entity IDs (`AIDA…`, `AROA…`), which are not credentials. A Supabase `service_role` JWT is labelled as such.
 
 ## Where It Looks
 
@@ -114,17 +116,17 @@ Detection runs across every surface a key can hide in:
 |---|---|
 | **DOM / inline scripts** | Full page HTML + open **and closed** shadow-DOM markup |
 | **JavaScript bundles** | All `<script src>`, preloads, and modulepreloads are fetched and scanned |
-| **Source maps** | `sourceMappingURL` files are followed; original un-minified source is scanned |
-| **Recursive asset graph** | Referenced chunks, JSON, and CSS followed up to 3 levels deep (same-origin) |
-| **Common config paths** | `/.env`, `/config.json`, `/firebase-config.json`, plus exposed dumps (`/.git/config`, `/wp-config.php.bak`, `/actuator/env`, `/phpinfo.php`) probed once per origin |
+| **Source maps** | `sourceMappingURL` comments (JS and CSS), the `SourceMap` response header, inline `data:` maps (dev builds), and a `<file>.map` guess when the reference was stripped; original un-minified source is scanned |
+| **Recursive asset graph** | Referenced chunks, JSON, and CSS followed up to 3 levels deep (same-origin), plus assets the page actually loaded (resource timing: `import()` chunks, Worker scripts), paths named in inline scripts, and build manifests (`asset-manifest.json`, Next `_buildManifest.js`, Vite manifest) that list routes you never opened. Files up to 16 MB are scanned in full |
+| **Common config paths** | `/.env`, `/config.json`, `/firebase-config.json`, runtime env files, plus exposed dumps (`/.git/config`, `/wp-config.php.bak`, `/actuator/env`, `/phpinfo.php`) probed once per origin. A single-page-app fallback page served for a missing path is recognised and ignored |
 | **Web storage** | `localStorage` and `sessionStorage` |
 | **IndexedDB & Cache Storage** | The origin's IndexedDB object stores and Service Worker `caches` entries (bounded) |
 | **Runtime globals** | The page's own `window.*` properties (e.g. `window.ENV`, injected config), `window.name`, and `history.state` scanned in the MAIN world |
 | **`<template>` contents** | Inert template fragments that never appear in the serialized DOM |
 | **Page URL** | The current URL's query string and `#fragment` (catches OAuth-style tokens) |
-| **Decode-and-rescan** | Base64 / base64url blobs and percent-encoded text are decoded and re-scanned, so keys nested inside encoded config or JWT-style payloads are caught |
-| **Network traffic** | Live interception of `fetch()`, `XMLHttpRequest`, `WebSocket`, `EventSource`, and `sendBeacon` request/response bodies, headers, and URLs |
-| **webRequest headers** | `key=` params, `X-Goog-Api-Key`, `Authorization: Bearer`, `x-api-key` |
+| **Decode-and-rescan** | Base64 / base64url blobs, percent-encoded text, JS string escapes (`\x41`, `A`, escaped JSON) and HTML entities (`&quot;apiKey&quot;`) are decoded and re-scanned, so keys nested inside encoded config or JWT-style payloads are caught |
+| **Network traffic** | Live interception of `fetch()`, `XMLHttpRequest`, `WebSocket`, `EventSource` (including named events), and `sendBeacon` request/response bodies (text, JSON, Blob, buffer), headers, and URLs |
+| **webRequest** | Request URLs and request headers on every host, for all validated providers — this is what covers requests made by Web/Service Workers and by `<img>`/`<script>` tags |
 | **Response headers & cookies** | Top-level response header values and the origin's cookies are scanned for keys |
 | **Resource timing** | URLs from `performance.getEntriesByType('resource')` |
 
@@ -202,6 +204,7 @@ manifest.json              MV3 manifest
 background.js              service worker: network sniff, bundle scan, audit runner, badge
 content/
   intercept.js            MAIN-world network interceptor (fetch/XHR/WS/SSE/beacon)
+  bridge.js               private channel that carries interceptor findings to the isolated world
   patterns.js             shared key regex + helpers (content world)
   content.js              DOM / storage / resource scanner + script-URL forwarder
 lib/

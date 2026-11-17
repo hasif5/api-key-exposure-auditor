@@ -24,6 +24,7 @@ const CS = {
   alnum: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789',
   b64url: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-',
   upper: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
+  base32: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567',
   hex: '0123456789abcdef',
   b64: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789/+',
   digits: '0123456789'
@@ -64,12 +65,15 @@ export const make = {
   xai: (s) => 'xa' + 'i-' + body('xai:' + s, 80, CS.alnum, true),
   github: (s) => 'gh' + 'p_' + body('github:' + s, 36, CS.alnum, true),
   gitlab: (s) => 'gl' + 'pat-' + body('gitlab:' + s, 26, CS.b64url, true),
-  slack: (s) => 'xo' + 'xb-' + '000000000000-' + body('slack:' + s, 24, CS.alnum, true),
+  // Team-ID digits are random: a zero-padded ID is placeholder-shaped and the
+  // detector's placeholder filter (added after v1.13.0) rejects it.
+  slack: (s) => 'xo' + 'xb-' + filler('slackTeam:' + s, 12, CS.digits) + '-' + body('slack:' + s, 24, CS.alnum, true),
   stripeTest: (s) => 'sk' + '_test_' + body('stripeTest:' + s, 28, CS.alnum, true),
   // Pairs: Twilio is hex-only (no room for the marker); AWS carries a marker.
   twilioSid: (s) => 'A' + 'C' + filler('twilioSid:' + s, 32, CS.hex),
   twilioToken: (s) => filler('twilioToken:' + s, 32, CS.hex),
-  awsId: (s) => 'AK' + 'IA' + 'SYNTHFX' + filler('awsId:' + s, 9, CS.upper),
+  // Real access-key IDs are base32 (A-Z, 2-7); the detector requires that.
+  awsId: (s) => 'AK' + 'IA' + 'SYNTHFX' + filler('awsId:' + s, 9, CS.base32),
   awsSecret: (s) => body('awsSecret:' + s, 40, CS.b64, false)
     .replace(/^.{19}/, 'SynthFixtureNotReal'),
   // Generic (heuristic / "unknown" provider) shapes.
