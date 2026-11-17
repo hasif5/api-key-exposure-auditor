@@ -18,11 +18,17 @@ Live-validated providers: **Google**, **OpenAI**, **Anthropic**, **OpenRouter**,
 
 > If this tool helps you secure your projects, consider giving it a star -- it helps others find it.
 
-<p align="center">
-  <img src="docs/screenshots/popup.png" alt="Popup listing the API keys detected on the current page, each labelled with its provider" width="340" />
-  &nbsp;&nbsp;
-  <img src="docs/screenshots/dashboard.png" alt="Dashboard listing all detected keys grouped by origin, with risk, source and audit columns" width="560" />
-</p>
+<!-- Side by side via a table: fixed pixel widths overflow GitHub's README column and stack. Widths follow the aspect ratios (popup 380x507, dashboard 1280x860) so both come out about the same height. -->
+<table align="center">
+  <tr>
+    <td width="33%" valign="top">
+      <img src="docs/screenshots/popup.png" alt="Popup listing the API keys detected on the current page, each labelled with its provider" width="100%" />
+    </td>
+    <td width="67%" valign="top">
+      <img src="docs/screenshots/dashboard.png" alt="Dashboard listing all detected keys grouped by origin, with risk, source and audit columns" width="100%" />
+    </td>
+  </tr>
+</table>
 
 <p align="center"><sub>The popup (current tab) and the dashboard (all findings), captured from the real extension on a local test page. Every key shown is synthetic. Detection only: no audit was run, so risk shows as unknown. Reproduce with <code>node research/harness/capture-readme-shots.mjs</code>.</sub></p>
 
