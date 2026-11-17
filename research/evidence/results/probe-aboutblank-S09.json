@@ -1,0 +1,30 @@
+{
+  "generatedAt": "2026-11-17T02:40:04.155Z",
+  "browser": "Chrome/149.0.7827.55",
+  "directNav": false,
+  "only": [
+    "S09"
+  ],
+  "perScenario": [
+    {
+      "id": "S09",
+      "badge": ""
+    }
+  ],
+  "records": [
+    {
+      "key": "sk-ant-...DzoU (108 chars) #a85db5f5bb15",
+      "provider": "anthropic",
+      "sources": [
+        "header"
+      ]
+    },
+    {
+      "key": "xoxb-00...PlBQ (42 chars) #b88088b1b0a5",
+      "provider": "slack",
+      "sources": [
+        "cookie"
+      ]
+    }
+  ]
+}

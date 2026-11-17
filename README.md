@@ -32,6 +32,32 @@ Live-validated providers: **Google**, **OpenAI**, **Anthropic**, **OpenRouter**,
 
 ---
 
+## Security Research & Case Studies
+
+Detection and risk-classification claims in this project are backed by a reproducible study that runs the real extension in Chromium against a local fixture site that serves only synthetic credentials. Nothing in it touches a real provider or a real secret.
+
+**[Case study 001: credential exposure across client-side surfaces](research/001-credential-exposure.md)** (completed 2026-11-17, extension v1.13.0)
+
+| Measured on the 14-origin synthetic corpus | Result |
+|---|---|
+| Declared exposures detected with correct provider, path and origin | 36 of 36 |
+| Predicted misses (split fragments, char-code assembly, Web Worker) | 3 of 3 missed, as documented |
+| Structurally invalid strings flagged | 0 of 15 |
+| Lookalikes flagged (placeholder, docs example, env reference, app identifier) | 4 of 4, a real false-positive surface |
+| Record-level precision | 36 of 40 (90.0%) |
+| Non-loopback network requests during the run | 0 |
+
+The study also records five observations about the extension itself, including that the billable-probe option defaults to on in the popup, dashboard and collection page (this README previously described it as opt-in and has been corrected). The corpus is small and synthetic, so these figures are not real-world detection or false-positive rates; see the limitations section of the case study.
+
+| Document | Purpose |
+|---|---|
+| [`research/README.md`](research/README.md) | Scope, authorization, layout, how to reproduce, capability status |
+| [`research/001-credential-exposure.md`](research/001-credential-exposure.md) | Methodology, results, limitations, remediation guidance |
+
+Reproduce with `node research/harness/logic.mjs` (no browser needed) and `node research/harness/browser.mjs` (needs Chromium); see `research/README.md` for prerequisites.
+
+---
+
 ## Quick Start
 
 No build step required -- three steps and you're running:
@@ -130,7 +156,7 @@ All data stays **local** in `chrome.storage.local`. The extension contacts the n
 
 1. **Browse.** Detection runs automatically; the badge counts distinct keys per tab.
 2. **Popup** -- click the toolbar icon to see keys found on the current page, their sources, and provider.
-3. **Audit** -- tick the authorization acknowledgment, then click **Audit key**. The default run uses free access checks. Tick "include billable generation probes" to also test token-billing inference.
+3. **Audit** -- tick the authorization acknowledgment, then click **Audit key**. The "include billable generation probes" option is **on by default** in the popup, dashboard and collection page, so a default audit also runs token-billing inference calls on providers that have them (OpenAI, Anthropic, xAI, Gemini, Vertex). Untick it before auditing to restrict the run to free access checks.
 4. **Dashboard** -- full findings view with domain grouping, **paginated display** (25/50/100/All), **filter by provider / risk / audit status**, **sort by** first-seen / last-seen / risk, enhanced search (key, origin, source, snippet), cancel button for batch audits, and **JSON / CSV export + import**.
 5. **Collection** -- save any key for later; a dedicated persistent page lets you revisit, annotate, re-audit, and export.
 
@@ -186,6 +212,7 @@ popup/                    current-tab UI
 dashboard/                all-findings UI, audit, JSON/CSV export-import
 collection/               saved-keys page (revisit, annotate, re-audit, export)
 icons/                    extension icons
+research/                 security research case studies, synthetic fixtures, harness, evidence
 ```
 
 ## Limitations

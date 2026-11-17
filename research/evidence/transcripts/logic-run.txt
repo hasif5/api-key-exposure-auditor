@@ -1,0 +1,23 @@
+A  fixture self-check: 14 scenarios, 0 problems
+B  detection variants: 124/124 detected with correct provider (+secret for pairs)
+C  parity over 143 texts: patterns.js differs on 0, intercept.js differs on 0
+C2 negative control: mutation applied=true, parity diffs reported=9 (must be > 0) -> OK
+D  false-positive corpus: invalid 0/15 flagged; lookalike 4/4 flagged
+   FLAGGED S12-openai-xxxx-placeholder -> openai
+   FLAGGED S12-google-docs-example -> google
+   FLAGGED S12-env-reference -> unknown (secret-like value assigned to "apiKey")
+   FLAGGED S12-app-identifier -> unknown (secret-like value assigned to "apiKey")
+E  risk classification (simulated responses): 31/31 scenarios matched expectation
+F  audit probe inventory (default = includeGenerate false):
+   google     probes=34 billable-in-default=25 no-referrer=true creds-omitted=true unexpected-hosts=0
+   openai     probes= 3 billable-in-default= 1 no-referrer=true creds-omitted=true unexpected-hosts=0
+   anthropic  probes= 2 billable-in-default= 0 no-referrer=true creds-omitted=true unexpected-hosts=0
+   openrouter probes= 3 billable-in-default= 0 no-referrer=true creds-omitted=true unexpected-hosts=0
+   xai        probes= 2 billable-in-default= 1 no-referrer=true creds-omitted=true unexpected-hosts=0
+   twilio     probes= 6 billable-in-default= 0 no-referrer=true creds-omitted=true unexpected-hosts=0
+   aws        probes= 1 billable-in-default= 0 no-referrer=true creds-omitted=true unexpected-hosts=0
+   github     probes= 1 billable-in-default= 0 no-referrer=true creds-omitted=true unexpected-hosts=0
+   gitlab     probes= 1 billable-in-default= 0 no-referrer=true creds-omitted=true unexpected-hosts=0
+   slack      probes= 1 billable-in-default= 0 no-referrer=true creds-omitted=true unexpected-hosts=0
+   stripe     probes= 1 billable-in-default= 0 no-referrer=true creds-omitted=true unexpected-hosts=0
+G  audit gate: popup lines 218,283; dashboard lines 156,159,490,1048,1139,1220; worker handlers reference consent: GAKS_AUDIT=false, GAKS_AUDIT_RAW=false

@@ -1,0 +1,1608 @@
+{
+  "meta": {
+    "generatedAt": "2026-11-17T03:20:05.103Z",
+    "browser": "Chrome/149.0.7827.55",
+    "extensionVersion": "1.13.0",
+    "gitCommit": "ee411f26c15ade4456bd583b67bb4a16d3277eb0",
+    "settleMsPerScenario": 8000,
+    "note": "All credentials are synthetic. Keys are redacted below (prefix, tail, length, sha256 fingerprint). The audit feature was not run in the browser."
+  },
+  "summary": {
+    "scenariosVisited": 14,
+    "positives": {
+      "expected": 36,
+      "detected": 36,
+      "detectedPct": 100,
+      "fullyCorrect": 36,
+      "fullyCorrectPct": 100,
+      "missed": [],
+      "wrongProvider": [],
+      "wrongSource": []
+    },
+    "knownMisses": {
+      "expectedMissed": 3,
+      "actuallyMissed": 3,
+      "surprisingDetections": []
+    },
+    "negatives": {
+      "invalid": {
+        "total": 15,
+        "flagged": 0
+      },
+      "lookalike": {
+        "total": 4,
+        "flagged": 4
+      }
+    },
+    "unexpectedRecords": {
+      "total": 4,
+      "unattributed": 0
+    },
+    "recordLevelPrecision": 90,
+    "ignoreList": {
+      "stored": 0,
+      "of": 1
+    },
+    "dedup": true
+  },
+  "containment": {
+    "dnsPolicy": "MAP maps.googleapis.com 127.0.0.1, MAP * ~NOTFOUND, EXCLUDE localhost, *.localhost, 127.0.0.1",
+    "requestsAttemptedByPagesAndWorker": 128,
+    "distinctHostsAttempted": [
+      "maps.googleapis.com",
+      "ocpannohgaembaknjmplinbjeijenhmh",
+      "s01-bundle.localhost",
+      "s02-inline.localhost",
+      "s03-sourcemap.localhost",
+      "s04-storage.localhost",
+      "s05-network.localhost",
+      "s06-globals.localhost",
+      "s07-encoded.localhost",
+      "s08-config.localhost",
+      "s09-headers.localhost",
+      "s10-webrequest.localhost",
+      "s11-generic.localhost",
+      "s12-negatives.localhost",
+      "s13-limits.localhost",
+      "s14-ignored.localhost"
+    ],
+    "nonLoopbackHostsAttempted": [],
+    "loadingFailures": 0,
+    "fixtureServerRequests": 109,
+    "fixtureServerNonLocalHostHits": 0,
+    "providerHostnameSinkHits": 1
+  },
+  "positives": [
+    {
+      "id": "S01-google",
+      "scenario": "S01",
+      "how": "literal in external bundle",
+      "expectedProvider": "google",
+      "expectedVia": [
+        "script"
+      ],
+      "detected": true,
+      "providerOk": true,
+      "secretOk": null,
+      "viaOk": true,
+      "originOk": true,
+      "urlOk": null,
+      "exclusiveOk": null,
+      "gotSources": [
+        "script",
+        "window"
+      ],
+      "key": "AIzaSYN...BNYu (39 chars) #860bd6b262e5"
+    },
+    {
+      "id": "S01-openai",
+      "scenario": "S01",
+      "how": "literal in external bundle",
+      "expectedProvider": "openai",
+      "expectedVia": [
+        "script"
+      ],
+      "detected": true,
+      "providerOk": true,
+      "secretOk": null,
+      "viaOk": true,
+      "originOk": true,
+      "urlOk": null,
+      "exclusiveOk": null,
+      "gotSources": [
+        "script",
+        "window"
+      ],
+      "key": "sk-proj...JxEZ (56 chars) #2240b3cb3415"
+    },
+    {
+      "id": "S01-anthropic",
+      "scenario": "S01",
+      "how": "literal in external bundle",
+      "expectedProvider": "anthropic",
+      "expectedVia": [
+        "script"
+      ],
+      "detected": true,
+      "providerOk": true,
+      "secretOk": null,
+      "viaOk": true,
+      "originOk": true,
+      "urlOk": null,
+      "exclusiveOk": null,
+      "gotSources": [
+        "script",
+        "window"
+      ],
+      "key": "sk-ant-...eppy (108 chars) #ae1d9a8347ad"
+    },
+    {
+      "id": "S01-dup",
+      "scenario": "S01",
+      "how": "literal in bundle; ALSO placed in localStorage by S04 (dedup check)",
+      "expectedProvider": "openai",
+      "expectedVia": [
+        "script"
+      ],
+      "detected": true,
+      "providerOk": true,
+      "secretOk": null,
+      "viaOk": true,
+      "originOk": true,
+      "urlOk": null,
+      "exclusiveOk": null,
+      "gotSources": [
+        "script",
+        "window",
+        "storage"
+      ],
+      "key": "sk-SYNT...rGAK (51 chars) #fe0bfc641b80"
+    },
+    {
+      "id": "S01-twilio",
+      "scenario": "S01",
+      "how": "SID with Auth Token nearby (pair)",
+      "expectedProvider": "twilio",
+      "expectedVia": [
+        "script"
+      ],
+      "detected": true,
+      "providerOk": true,
+      "secretOk": true,
+      "viaOk": true,
+      "originOk": true,
+      "urlOk": null,
+      "exclusiveOk": null,
+      "gotSources": [
+        "script"
+      ],
+      "key": "AC3c09c...b063 (34 chars) #62d786485f1e"
+    },
+    {
+      "id": "S01-aws",
+      "scenario": "S01",
+      "how": "Access Key ID with Secret Access Key nearby (pair)",
+      "expectedProvider": "aws",
+      "expectedVia": [
+        "script"
+      ],
+      "detected": true,
+      "providerOk": true,
+      "secretOk": true,
+      "viaOk": true,
+      "originOk": true,
+      "urlOk": null,
+      "exclusiveOk": null,
+      "gotSources": [
+        "script"
+      ],
+      "key": "AKIASYN...NILM (20 chars) #34596e470aae"
+    },
+    {
+      "id": "S01-chunk",
+      "scenario": "S01",
+      "how": "literal in a lazy chunk referenced only by the bundle (recursive asset graph)",
+      "expectedProvider": "openrouter",
+      "expectedVia": [
+        "script"
+      ],
+      "detected": true,
+      "providerOk": true,
+      "secretOk": null,
+      "viaOk": true,
+      "originOk": true,
+      "urlOk": true,
+      "exclusiveOk": null,
+      "gotSources": [
+        "script"
+      ],
+      "key": "sk-or-v...ICwp (73 chars) #51e592de1b9d"
+    },
+    {
+      "id": "S02-github",
+      "scenario": "S02",
+      "how": "literal in inline <script>",
+      "expectedProvider": "github",
+      "expectedVia": [
+        "dom"
+      ],
+      "detected": true,
+      "providerOk": true,
+      "secretOk": null,
+      "viaOk": true,
+      "originOk": true,
+      "urlOk": null,
+      "exclusiveOk": null,
+      "gotSources": [
+        "dom"
+      ],
+      "key": "ghp_SYN...GwFm (40 chars) #24fa0115e2a4"
+    },
+    {
+      "id": "S02-slack",
+      "scenario": "S02",
+      "how": "literal in inline <script>",
+      "expectedProvider": "slack",
+      "expectedVia": [
+        "dom"
+      ],
+      "detected": true,
+      "providerOk": true,
+      "secretOk": null,
+      "viaOk": true,
+      "originOk": true,
+      "urlOk": null,
+      "exclusiveOk": null,
+      "gotSources": [
+        "dom"
+      ],
+      "key": "xoxb-00...dIUd (42 chars) #22a75efb690f"
+    },
+    {
+      "id": "S02-gitlab",
+      "scenario": "S02",
+      "how": "literal in an HTML attribute",
+      "expectedProvider": "gitlab",
+      "expectedVia": [
+        "dom"
+      ],
+      "detected": true,
+      "providerOk": true,
+      "secretOk": null,
+      "viaOk": true,
+      "originOk": true,
+      "urlOk": null,
+      "exclusiveOk": null,
+      "gotSources": [
+        "dom"
+      ],
+      "key": "glpat-S...RjJh (32 chars) #ce2f24d1af20"
+    },
+    {
+      "id": "S03-openrouter",
+      "scenario": "S03",
+      "how": "in sourcesContent of the .map (plain); absent from the minified bundle",
+      "expectedProvider": "openrouter",
+      "expectedVia": [
+        "sourcemap"
+      ],
+      "detected": true,
+      "providerOk": true,
+      "secretOk": null,
+      "viaOk": true,
+      "originOk": true,
+      "urlOk": true,
+      "exclusiveOk": null,
+      "gotSources": [
+        "script",
+        "sourcemap"
+      ],
+      "key": "sk-or-v...NDBM (73 chars) #2be33eaf914f"
+    },
+    {
+      "id": "S03-stripe",
+      "scenario": "S03",
+      "how": "in sourcesContent with JSON-escaped underscores: invisible to a raw text scan, visible only after map decoding",
+      "expectedProvider": "stripe",
+      "expectedVia": [
+        "sourcemap"
+      ],
+      "detected": true,
+      "providerOk": true,
+      "secretOk": null,
+      "viaOk": true,
+      "originOk": true,
+      "urlOk": true,
+      "exclusiveOk": true,
+      "gotSources": [
+        "sourcemap"
+      ],
+      "key": "sk_test...ycAj (36 chars) #dac73e563411"
+    },
+    {
+      "id": "S04-xai",
+      "scenario": "S04",
+      "how": "localStorage (JSON value)",
+      "expectedProvider": "xai",
+      "expectedVia": [
+        "storage"
+      ],
+      "detected": true,
+      "providerOk": true,
+      "secretOk": null,
+      "viaOk": true,
+      "originOk": true,
+      "urlOk": null,
+      "exclusiveOk": null,
+      "gotSources": [
+        "storage",
+        "window"
+      ],
+      "key": "xai-SYN...Ylt3 (84 chars) #4b05fc34f115"
+    },
+    {
+      "id": "S04-session",
+      "scenario": "S04",
+      "how": "sessionStorage",
+      "expectedProvider": "gitlab",
+      "expectedVia": [
+        "storage"
+      ],
+      "detected": true,
+      "providerOk": true,
+      "secretOk": null,
+      "viaOk": true,
+      "originOk": true,
+      "urlOk": null,
+      "exclusiveOk": null,
+      "gotSources": [
+        "storage",
+        "window"
+      ],
+      "key": "glpat-S...SRIx (32 chars) #7606af725559"
+    },
+    {
+      "id": "S04-idb",
+      "scenario": "S04",
+      "how": "IndexedDB object store",
+      "expectedProvider": "github",
+      "expectedVia": [
+        "indexeddb"
+      ],
+      "detected": true,
+      "providerOk": true,
+      "secretOk": null,
+      "viaOk": true,
+      "originOk": true,
+      "urlOk": null,
+      "exclusiveOk": null,
+      "gotSources": [
+        "indexeddb"
+      ],
+      "key": "ghp_SYN...18a4 (40 chars) #1be5e7e3d367"
+    },
+    {
+      "id": "S04-dup",
+      "scenario": "S04",
+      "how": "localStorage; same string as S01 bundle (must dedup to ONE record)",
+      "expectedProvider": "openai",
+      "expectedVia": [
+        "storage"
+      ],
+      "detected": true,
+      "providerOk": true,
+      "secretOk": null,
+      "viaOk": true,
+      "originOk": true,
+      "urlOk": null,
+      "exclusiveOk": null,
+      "gotSources": [
+        "script",
+        "window",
+        "storage"
+      ],
+      "key": "sk-SYNT...rGAK (51 chars) #fe0bfc641b80"
+    },
+    {
+      "id": "S05-fetch-response",
+      "scenario": "S05",
+      "how": "JSON body of a fetch() response",
+      "expectedProvider": "openrouter",
+      "expectedVia": [
+        "network"
+      ],
+      "detected": true,
+      "providerOk": true,
+      "secretOk": null,
+      "viaOk": true,
+      "originOk": true,
+      "urlOk": null,
+      "exclusiveOk": null,
+      "gotSources": [
+        "network"
+      ],
+      "key": "sk-or-v...SdyK (73 chars) #6546eddc761c"
+    },
+    {
+      "id": "S05-xhr-response",
+      "scenario": "S05",
+      "how": "JSON body of an XMLHttpRequest response",
+      "expectedProvider": "stripe",
+      "expectedVia": [
+        "network"
+      ],
+      "detected": true,
+      "providerOk": true,
+      "secretOk": null,
+      "viaOk": true,
+      "originOk": true,
+      "urlOk": null,
+      "exclusiveOk": null,
+      "gotSources": [
+        "network"
+      ],
+      "key": "sk_test...FQl6 (36 chars) #8c12a3276b1f"
+    },
+    {
+      "id": "S05-request-header",
+      "scenario": "S05",
+      "how": "Authorization header set on a fetch() request",
+      "expectedProvider": "openai",
+      "expectedVia": [
+        "network"
+      ],
+      "detected": true,
+      "providerOk": true,
+      "secretOk": null,
+      "viaOk": true,
+      "originOk": true,
+      "urlOk": null,
+      "exclusiveOk": null,
+      "gotSources": [
+        "network"
+      ],
+      "key": "sk-svca...mIIp (59 chars) #c7d84611abdb"
+    },
+    {
+      "id": "S05-request-body",
+      "scenario": "S05",
+      "how": "JSON body of a fetch() request",
+      "expectedProvider": "google",
+      "expectedVia": [
+        "network"
+      ],
+      "detected": true,
+      "providerOk": true,
+      "secretOk": null,
+      "viaOk": true,
+      "originOk": true,
+      "urlOk": null,
+      "exclusiveOk": null,
+      "gotSources": [
+        "network"
+      ],
+      "key": "AIzaSYN...0s5L (39 chars) #fab6271895ff"
+    },
+    {
+      "id": "S06-aws",
+      "scenario": "S06",
+      "how": "window.__RT_CONFIG__ (runtime-assembled; not in served markup)",
+      "expectedProvider": "aws",
+      "expectedVia": [
+        "window"
+      ],
+      "detected": true,
+      "providerOk": true,
+      "secretOk": true,
+      "viaOk": true,
+      "originOk": true,
+      "urlOk": null,
+      "exclusiveOk": null,
+      "gotSources": [
+        "window"
+      ],
+      "key": "AKIASYN...6PZ2 (20 chars) #9536c106ed7f"
+    },
+    {
+      "id": "S06-twilio",
+      "scenario": "S06",
+      "how": "window.__RT_CONFIG__ (runtime-assembled)",
+      "expectedProvider": "twilio",
+      "expectedVia": [
+        "window"
+      ],
+      "detected": true,
+      "providerOk": true,
+      "secretOk": true,
+      "viaOk": true,
+      "originOk": true,
+      "urlOk": null,
+      "exclusiveOk": null,
+      "gotSources": [
+        "window"
+      ],
+      "key": "AC05c81...dc98 (34 chars) #5e50da80b4d1"
+    },
+    {
+      "id": "S06-window-name",
+      "scenario": "S06",
+      "how": "window.name",
+      "expectedProvider": "google",
+      "expectedVia": [
+        "window"
+      ],
+      "detected": true,
+      "providerOk": true,
+      "secretOk": null,
+      "viaOk": true,
+      "originOk": true,
+      "urlOk": null,
+      "exclusiveOk": null,
+      "gotSources": [
+        "window"
+      ],
+      "key": "AQ.SYNT...Cbb_ (43 chars) #e75e8595a348"
+    },
+    {
+      "id": "S07-b64",
+      "scenario": "S07",
+      "how": "key exists only inside a base64 blob (decode-and-rescan)",
+      "expectedProvider": "openrouter",
+      "expectedVia": [
+        "dom"
+      ],
+      "detected": true,
+      "providerOk": true,
+      "secretOk": null,
+      "viaOk": true,
+      "originOk": true,
+      "urlOk": null,
+      "exclusiveOk": null,
+      "gotSources": [
+        "dom"
+      ],
+      "key": "sk-or-v...5c4o (73 chars) #add8f43b2b4a"
+    },
+    {
+      "id": "S08-config-json",
+      "scenario": "S08",
+      "how": "/config.json probed from the common-path list",
+      "expectedProvider": "google",
+      "expectedVia": [
+        "script"
+      ],
+      "detected": true,
+      "providerOk": true,
+      "secretOk": null,
+      "viaOk": true,
+      "originOk": true,
+      "urlOk": true,
+      "exclusiveOk": null,
+      "gotSources": [
+        "script"
+      ],
+      "key": "AQ.SYNT...j_j9 (43 chars) #bf0a39bc664d"
+    },
+    {
+      "id": "S08-env-twilio",
+      "scenario": "S08",
+      "how": "/.env probed from the common-path list (pair)",
+      "expectedProvider": "twilio",
+      "expectedVia": [
+        "script"
+      ],
+      "detected": true,
+      "providerOk": true,
+      "secretOk": true,
+      "viaOk": true,
+      "originOk": true,
+      "urlOk": true,
+      "exclusiveOk": null,
+      "gotSources": [
+        "script"
+      ],
+      "key": "AC5ef18...781b (34 chars) #21abeac0876b"
+    },
+    {
+      "id": "S08-env-stripe",
+      "scenario": "S08",
+      "how": "/.env probed from the common-path list",
+      "expectedProvider": "stripe",
+      "expectedVia": [
+        "script"
+      ],
+      "detected": true,
+      "providerOk": true,
+      "secretOk": null,
+      "viaOk": true,
+      "originOk": true,
+      "urlOk": true,
+      "exclusiveOk": null,
+      "gotSources": [
+        "script"
+      ],
+      "key": "sk_test...9qLR (36 chars) #a1516fde2ecb"
+    },
+    {
+      "id": "S09-header",
+      "scenario": "S09",
+      "how": "custom response header on the main document",
+      "expectedProvider": "anthropic",
+      "expectedVia": [
+        "header"
+      ],
+      "detected": true,
+      "providerOk": true,
+      "secretOk": null,
+      "viaOk": true,
+      "originOk": true,
+      "urlOk": null,
+      "exclusiveOk": null,
+      "gotSources": [
+        "header"
+      ],
+      "key": "sk-ant-...DzoU (108 chars) #a85db5f5bb15"
+    },
+    {
+      "id": "S09-cookie",
+      "scenario": "S09",
+      "how": "Set-Cookie value (cookie jar scan; Set-Cookie header scan also acceptable)",
+      "expectedProvider": "slack",
+      "expectedVia": [
+        "cookie",
+        "header"
+      ],
+      "detected": true,
+      "providerOk": true,
+      "secretOk": null,
+      "viaOk": true,
+      "originOk": true,
+      "urlOk": null,
+      "exclusiveOk": null,
+      "gotSources": [
+        "cookie"
+      ],
+      "key": "xoxb-00...PlBQ (42 chars) #b88088b1b0a5"
+    },
+    {
+      "id": "S10-img-key-param",
+      "scenario": "S10",
+      "how": "key= query parameter on a detached Image() request to a Google API host (loopback-mapped)",
+      "expectedProvider": "google",
+      "expectedVia": [
+        "network"
+      ],
+      "detected": true,
+      "providerOk": true,
+      "secretOk": null,
+      "viaOk": true,
+      "originOk": true,
+      "urlOk": null,
+      "exclusiveOk": null,
+      "gotSources": [
+        "network",
+        "resource"
+      ],
+      "key": "AIzaSYN...5ujG (39 chars) #b6e878d425a3"
+    },
+    {
+      "id": "S11-sendgrid",
+      "scenario": "S11",
+      "how": "SendGrid-shaped token (heuristic, not validated)",
+      "expectedProvider": "unknown",
+      "expectedVia": [
+        "dom"
+      ],
+      "detected": true,
+      "providerOk": true,
+      "secretOk": null,
+      "viaOk": true,
+      "originOk": true,
+      "urlOk": null,
+      "exclusiveOk": null,
+      "gotSources": [
+        "dom",
+        "window"
+      ],
+      "key": "SG.0H_F...4iEC (69 chars) #1b8386c71612"
+    },
+    {
+      "id": "S11-jwt",
+      "scenario": "S11",
+      "how": "JWT-shaped token (heuristic)",
+      "expectedProvider": "unknown",
+      "expectedVia": [
+        "dom"
+      ],
+      "detected": true,
+      "providerOk": true,
+      "secretOk": null,
+      "viaOk": true,
+      "originOk": true,
+      "urlOk": null,
+      "exclusiveOk": null,
+      "gotSources": [
+        "dom",
+        "window"
+      ],
+      "key": "eyJhbGc...cbzu (167 chars) #f46f27f24804"
+    },
+    {
+      "id": "S11-dburl",
+      "scenario": "S11",
+      "how": "connection string with embedded credentials (heuristic)",
+      "expectedProvider": "unknown",
+      "expectedVia": [
+        "dom"
+      ],
+      "detected": true,
+      "providerOk": true,
+      "secretOk": null,
+      "viaOk": true,
+      "originOk": true,
+      "urlOk": null,
+      "exclusiveOk": null,
+      "gotSources": [
+        "dom",
+        "window"
+      ],
+      "key": "postgre...5432 (66 chars) #4318af76b831"
+    },
+    {
+      "id": "S11-npm",
+      "scenario": "S11",
+      "how": "npm-token-shaped value (heuristic)",
+      "expectedProvider": "unknown",
+      "expectedVia": [
+        "dom"
+      ],
+      "detected": true,
+      "providerOk": true,
+      "secretOk": null,
+      "viaOk": true,
+      "originOk": true,
+      "urlOk": null,
+      "exclusiveOk": null,
+      "gotSources": [
+        "dom",
+        "window"
+      ],
+      "key": "npm_WDA...K3zW (40 chars) #7cce9031be9f"
+    },
+    {
+      "id": "S11-assign",
+      "scenario": "S11",
+      "how": "high-entropy value assigned to \"clientSecret\" (heuristic)",
+      "expectedProvider": "unknown",
+      "expectedVia": [
+        "dom"
+      ],
+      "detected": true,
+      "providerOk": true,
+      "secretOk": null,
+      "viaOk": true,
+      "originOk": true,
+      "urlOk": null,
+      "exclusiveOk": null,
+      "gotSources": [
+        "dom",
+        "window"
+      ],
+      "key": "WyeozFq...VQaF (24 chars) #30e783827b98"
+    },
+    {
+      "id": "S11-pem",
+      "scenario": "S11",
+      "how": "PEM private-key block (heuristic; random body, not a key)",
+      "expectedProvider": "unknown",
+      "expectedVia": [
+        "dom"
+      ],
+      "detected": true,
+      "providerOk": true,
+      "secretOk": null,
+      "viaOk": true,
+      "originOk": true,
+      "urlOk": null,
+      "exclusiveOk": null,
+      "gotSources": [
+        "dom"
+      ],
+      "key": "-----BE...---- (191 chars) #0751e3958ffa"
+    }
+  ],
+  "knownMisses": [
+    {
+      "id": "S13-fragments",
+      "how": "assembled from two string fragments inside a closure; never stored, sent or attached to window",
+      "detected": false,
+      "key": "sk-proj...lZLA (56 chars) #d401d3517f5a"
+    },
+    {
+      "id": "S13-charcodes",
+      "how": "stored as an array of char codes; rebuilt only inside a closure",
+      "detected": false,
+      "key": "sk-ant-...rUDo (108 chars) #3b37eb1c86d6"
+    },
+    {
+      "id": "S13-worker",
+      "how": "literal in a Web Worker script referenced only from an inline script",
+      "detected": false,
+      "key": "sk-or-v...HcTR (73 chars) #f9978a1ca757"
+    }
+  ],
+  "negatives": [
+    {
+      "id": "S12-google-too-long",
+      "cls": "invalid",
+      "note": "Google-shaped but 8 chars too long (trailing boundary guard)",
+      "flagged": false,
+      "flaggedAs": null
+    },
+    {
+      "id": "S12-google-too-short",
+      "cls": "invalid",
+      "note": "Google prefix with a body that is too short",
+      "flagged": false,
+      "flaggedAs": null
+    },
+    {
+      "id": "S12-anthropic-too-short",
+      "cls": "invalid",
+      "note": "sk-ant- prefix with a body under the 90-char minimum",
+      "flagged": false,
+      "flaggedAs": null
+    },
+    {
+      "id": "S12-openai-embedded",
+      "cls": "invalid",
+      "note": "OpenAI-shaped value glued to a preceding alphanumeric run (lookbehind guard)",
+      "flagged": false,
+      "flaggedAs": null
+    },
+    {
+      "id": "S12-github-too-short",
+      "cls": "invalid",
+      "note": "ghp_ prefix with too few characters",
+      "flagged": false,
+      "flaggedAs": null
+    },
+    {
+      "id": "S12-aws-id-too-long",
+      "cls": "invalid",
+      "note": "AWS-shaped ID with extra trailing capitals (trailing guard)",
+      "flagged": false,
+      "flaggedAs": null
+    },
+    {
+      "id": "S12-twilio-sid-no-context",
+      "cls": "invalid",
+      "note": "AC + 32 hex with no Twilio wording nearby (context gate)",
+      "flagged": false,
+      "flaggedAs": null
+    },
+    {
+      "id": "S12-md5",
+      "cls": "invalid",
+      "note": "32-hex digest (content hash)",
+      "flagged": false,
+      "flaggedAs": null
+    },
+    {
+      "id": "S12-sha256",
+      "cls": "invalid",
+      "note": "64-hex digest (content hash)",
+      "flagged": false,
+      "flaggedAs": null
+    },
+    {
+      "id": "S12-uuid",
+      "cls": "invalid",
+      "note": "RFC 4122 UUID",
+      "flagged": false,
+      "flaggedAs": null
+    },
+    {
+      "id": "S12-chunk-name",
+      "cls": "invalid",
+      "note": "webpack-style chunk filename",
+      "flagged": false,
+      "flaggedAs": null
+    },
+    {
+      "id": "S12-low-entropy-assign",
+      "cls": "invalid",
+      "note": "low-entropy value assigned to \"token\" (entropy gate)",
+      "flagged": false,
+      "flaggedAs": null
+    },
+    {
+      "id": "S12-placeholder-assign",
+      "cls": "invalid",
+      "note": "placeholder assigned to \"apiKey\" (placeholder filter)",
+      "flagged": false,
+      "flaggedAs": null
+    },
+    {
+      "id": "S12-changeme-assign",
+      "cls": "invalid",
+      "note": "changeme-style placeholder assigned to \"password\"",
+      "flagged": false,
+      "flaggedAs": null
+    },
+    {
+      "id": "S12-short-assign",
+      "cls": "invalid",
+      "note": "short value assigned to \"password\" (length gate)",
+      "flagged": false,
+      "flaggedAs": null
+    },
+    {
+      "id": "S12-openai-xxxx-placeholder",
+      "cls": "lookalike",
+      "note": "OpenAI-format placeholder made of x characters",
+      "flagged": true,
+      "flaggedAs": "openai"
+    },
+    {
+      "id": "S12-google-docs-example",
+      "cls": "lookalike",
+      "note": "Google-format documentation example",
+      "flagged": true,
+      "flaggedAs": "google"
+    },
+    {
+      "id": "S12-env-reference",
+      "cls": "lookalike",
+      "note": "environment-variable reference assigned to \"apiKey\"",
+      "flagged": true,
+      "flaggedAs": "unknown"
+    },
+    {
+      "id": "S12-app-identifier",
+      "cls": "lookalike",
+      "note": "reverse-DNS app identifier assigned to \"apiKey\"",
+      "flagged": true,
+      "flaggedAs": "unknown"
+    }
+  ],
+  "unexpectedRecords": [
+    {
+      "key": "AIzaSyE...0000 (39 chars) #72cd054c2193",
+      "provider": "google",
+      "sources": [
+        "dom",
+        "window"
+      ],
+      "origins": [
+        "http://s12-negatives.localhost:58860"
+      ],
+      "attributedTo": "S12-google-docs-example",
+      "cls": "lookalike",
+      "snippet": "…-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"; var l2=\"<key>\"; var c5={apiKey:\"<process...Y_V2 (29 chars) #a3f46cbdf732>\"}; var c6={…"
+    },
+    {
+      "key": "sk-xxxx...xxxx (51 chars) #42db5df1bd9b",
+      "provider": "openai",
+      "sources": [
+        "dom",
+        "window"
+      ],
+      "origins": [
+        "http://s12-negatives.localhost:58860"
+      ],
+      "attributedTo": "S12-openai-xxxx-placeholder",
+      "cls": "lookalike",
+      "snippet": "…hangeme-please-9999\"}; var c4={password:\"hunter2\"}; var l1=\"<key>\"; var l2=\"<AIzaSyE...0000 (39 chars) #72cd054c2193>\"; var c5=…"
+    },
+    {
+      "key": "process...Y_V2 (29 chars) #a3f46cbdf732",
+      "provider": "unknown",
+      "sources": [
+        "dom",
+        "window"
+      ],
+      "origins": [
+        "http://s12-negatives.localhost:58860"
+      ],
+      "attributedTo": "S12-env-reference",
+      "cls": "lookalike",
+      "snippet": "assigned to \"apiKey\" — …xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"; var l2=\"<AIzaSyE...0000 (39 chars) #72cd054c2193>\"; var c5={apiKey:\"<key>\"}; var c6={apiKey:\"<org.acm...026x (26 chars) #bc98c1d09a8d>\"};</script><!-- <AC7f9d9...5ad9 (34 chars) #53d84bac1d4f> --…"
+    },
+    {
+      "key": "org.acm...026x (26 chars) #bc98c1d09a8d",
+      "provider": "unknown",
+      "sources": [
+        "dom",
+        "window"
+      ],
+      "origins": [
+        "http://s12-negatives.localhost:58860"
+      ],
+      "attributedTo": "S12-app-identifier",
+      "cls": "lookalike",
+      "snippet": "assigned to \"apiKey\" — …XAMPLE-NOT-A-REAL-KEY-0000000000\"; var c5={apiKey:\"<process...Y_V2 (29 chars) #a3f46cbdf732>\"}; var c6={apiKey:\"<key>\"};</script><!-- <AC7f9d9...5ad9 (34 chars) #53d84bac1d4f> --></body></html>"
+    }
+  ],
+  "ignoreProbe": [
+    {
+      "id": "S14-ignored",
+      "how": "literal key on an origin the user added to the ignore list; nothing may be stored",
+      "stored": false
+    }
+  ],
+  "dedup": {
+    "records": 1,
+    "origins": [
+      "http://s01-bundle.localhost:58860",
+      "http://s04-storage.localhost:58860"
+    ],
+    "sources": [
+      "script",
+      "window",
+      "storage"
+    ],
+    "ok": true
+  },
+  "badges": [
+    {
+      "scenario": "S01",
+      "badge": "7",
+      "expectedDistinctKeys": 7
+    },
+    {
+      "scenario": "S02",
+      "badge": "3",
+      "expectedDistinctKeys": 3
+    },
+    {
+      "scenario": "S03",
+      "badge": "2",
+      "expectedDistinctKeys": 2
+    },
+    {
+      "scenario": "S04",
+      "badge": "4",
+      "expectedDistinctKeys": 4
+    },
+    {
+      "scenario": "S05",
+      "badge": "4",
+      "expectedDistinctKeys": 4
+    },
+    {
+      "scenario": "S06",
+      "badge": "3",
+      "expectedDistinctKeys": 3
+    },
+    {
+      "scenario": "S07",
+      "badge": "1",
+      "expectedDistinctKeys": 1
+    },
+    {
+      "scenario": "S08",
+      "badge": "3",
+      "expectedDistinctKeys": 3
+    },
+    {
+      "scenario": "S09",
+      "badge": "",
+      "expectedDistinctKeys": 2
+    },
+    {
+      "scenario": "S10",
+      "badge": "1",
+      "expectedDistinctKeys": 1
+    },
+    {
+      "scenario": "S11",
+      "badge": "6",
+      "expectedDistinctKeys": 6
+    },
+    {
+      "scenario": "S12",
+      "badge": "4",
+      "expectedDistinctKeys": 0
+    },
+    {
+      "scenario": "S13",
+      "badge": "",
+      "expectedDistinctKeys": 0
+    },
+    {
+      "scenario": "S14",
+      "badge": "",
+      "expectedDistinctKeys": 0
+    }
+  ],
+  "databaseSnapshot": [
+    {
+      "key": "AIzaSYN...BNYu (39 chars) #860bd6b262e5",
+      "provider": "google",
+      "sources": [
+        "script",
+        "window"
+      ],
+      "origins": [
+        "http://s01-bundle.localhost:<port>"
+      ],
+      "hasSecret": false,
+      "snippet": "in s01-bundle.localhost:58860/…/app.bundle.js — !function(){var CFG={region:\"us-east-1\",mapsKey:\"<key>\",llm:{provider:\"openai\",apiKey:\"sk-proj-SYNTHFIXTUREjiF8KTd…"
+    },
+    {
+      "key": "sk-ant-...eppy (108 chars) #ae1d9a8347ad",
+      "provider": "anthropic",
+      "sources": [
+        "script",
+        "window"
+      ],
+      "origins": [
+        "http://s01-bundle.localhost:<port>"
+      ],
+      "hasSecret": false,
+      "snippet": "in s01-bundle.localhost:58860/…/app.bundle.js — …XTUREjiF8KTdYUcLK6CrHIwDDsxrVb2-kRaqyJxEZ\"},assistant:{key:\"<key>\"},dupKey:\"<sk-SYNT...rzrG (49 chars) #53da73b457a8>…"
+    },
+    {
+      "key": "sk-proj...JxEZ (56 chars) #2240b3cb3415",
+      "provider": "openai",
+      "sources": [
+        "script",
+        "window"
+      ],
+      "origins": [
+        "http://s01-bundle.localhost:<port>"
+      ],
+      "hasSecret": false,
+      "snippet": "in s01-bundle.localhost:58860/…/app.bundle.js — …TUREnEsh4_JVE4tmwMskbRaBNYu\",llm:{provider:\"openai\",apiKey:\"<key>\"},assistant:{key:\"sk-ant-api03-SYNTHFIXTUREQE0ECAO_XLgih1Ra…"
+    },
+    {
+      "key": "sk-SYNT...rGAK (51 chars) #fe0bfc641b80",
+      "provider": "openai",
+      "sources": [
+        "script",
+        "window",
+        "storage"
+      ],
+      "origins": [
+        "http://s01-bundle.localhost:<port>",
+        "http://s04-storage.localhost:<port>"
+      ],
+      "hasSecret": false,
+      "snippet": "in s01-bundle.localhost:58860/…/app.bundle.js — …vxq44MngMUu3w76gWHJuKfZlTP16JQYY0-oJicNNOk8kkeppy\"},dupKey:\"<key>\"};var TWILIO_ACCOUNT_SID=\"AC3c09c4032b43bd69a8e179ea5ccbb06…"
+    },
+    {
+      "key": "AC3c09c...b063 (34 chars) #62d786485f1e",
+      "provider": "twilio",
+      "sources": [
+        "script"
+      ],
+      "origins": [
+        "http://s01-bundle.localhost:<port>"
+      ],
+      "hasSecret": true,
+      "snippet": "in s01-bundle.localhost:58860/…/app.bundle.js — …MtaHzpvoiLJROmkJYmwPVp3P556rzrGAK\"};var TWILIO_ACCOUNT_SID=\"<key>\",TWILIO_AUTH_TOKEN=\"<secret>\";var a… · secret: <secret>"
+    },
+    {
+      "key": "AKIASYN...NILM (20 chars) #34596e470aae",
+      "provider": "aws",
+      "sources": [
+        "script"
+      ],
+      "origins": [
+        "http://s01-bundle.localhost:<port>"
+      ],
+      "hasSecret": true,
+      "snippet": "in s01-bundle.localhost:58860/…/app.bundle.js — …c9828f53f1e32707ccbd92dacc8b94\";var awsConfig={accessKeyId:\"<key>\",secretAccessKey:\"<secret>\"… · secret: <secret>"
+    },
+    {
+      "key": "sk-or-v...ICwp (73 chars) #51e592de1b9d",
+      "provider": "openrouter",
+      "sources": [
+        "script"
+      ],
+      "origins": [
+        "http://s01-bundle.localhost:<port>"
+      ],
+      "hasSecret": false,
+      "snippet": "in s01-bundle.localhost:58860/…/chunk-lazy.js — export const lazy={token:\"<key>\"};"
+    },
+    {
+      "key": "ghp_SYN...GwFm (40 chars) #24fa0115e2a4",
+      "provider": "github",
+      "sources": [
+        "dom"
+      ],
+      "origins": [
+        "http://s02-inline.localhost:<port>"
+      ],
+      "hasSecret": false,
+      "snippet": "…ript>window.addEventListener(\"load\",function(){var ghToken=\"<key>\";var slackBot=\"<xoxb-00...dIUd (42 chars) #22a75efb690f>\";…"
+    },
+    {
+      "key": "glpat-S...RjJh (32 chars) #ce2f24d1af20",
+      "provider": "gitlab",
+      "sources": [
+        "dom"
+      ],
+      "origins": [
+        "http://s02-inline.localhost:<port>"
+      ],
+      "hasSecret": false,
+      "snippet": "…kBot.length)});</script><div id=\"widget\" data-config-token=\"<key>\">widget</div></body></html>"
+    },
+    {
+      "key": "xoxb-00...dIUd (42 chars) #22a75efb690f",
+      "provider": "slack",
+      "sources": [
+        "dom"
+      ],
+      "origins": [
+        "http://s02-inline.localhost:<port>"
+      ],
+      "hasSecret": false,
+      "snippet": "…en=\"<ghp_SYN...GwFm (40 chars) #24fa0115e2a4>\";var slackBot=\"<key>\";console.log(ghToken.length,slackBot.length)});</script><di…"
+    },
+    {
+      "key": "sk-or-v...NDBM (73 chars) #2be33eaf914f",
+      "provider": "openrouter",
+      "sources": [
+        "script",
+        "sourcemap"
+      ],
+      "origins": [
+        "http://s03-sourcemap.localhost:<port>"
+      ],
+      "hasSecret": false,
+      "snippet": "in s03-sourcemap.localhost:58860/…/app.min.js.map — …ontent\":[\"// src/config.js\\nexport const OPENROUTER_KEY = \\\"<key>\\\";\\nexport const APP = \\\"demo\\\";\\n\",\"// src/billing.js\\nexp…"
+    },
+    {
+      "key": "sk_test...ycAj (36 chars) #dac73e563411",
+      "provider": "stripe",
+      "sources": [
+        "sourcemap"
+      ],
+      "origins": [
+        "http://s03-sourcemap.localhost:<port>"
+      ],
+      "hasSecret": false,
+      "snippet": "in s03-sourcemap.localhost:58860/…/app.min.js.map (source map) — …demo\"; // src/billing.js export const BILLING = { secret: \"<key>\" };"
+    },
+    {
+      "key": "xai-SYN...Ylt3 (84 chars) #4b05fc34f115",
+      "provider": "xai",
+      "sources": [
+        "storage",
+        "window"
+      ],
+      "origins": [
+        "http://s04-storage.localhost:<port>"
+      ],
+      "hasSecret": false,
+      "snippet": "user_settings={\"theme\":\"dark\",\"xai\":\"<key>\",\"backup\":\"<sk-SYNT...6rzr (48 chars) #3eba28e701b4>…"
+    },
+    {
+      "key": "glpat-S...SRIx (32 chars) #7606af725559",
+      "provider": "gitlab",
+      "sources": [
+        "storage",
+        "window"
+      ],
+      "origins": [
+        "http://s04-storage.localhost:<port>"
+      ],
+      "hasSecret": false,
+      "snippet": "…THFIXTURELCIMtaHzpvoiLJROmkJYmwPVp3P556rzrGAK\"} tmp_session=<key>"
+    },
+    {
+      "key": "ghp_SYN...18a4 (40 chars) #1be5e7e3d367",
+      "provider": "github",
+      "sources": [
+        "indexeddb"
+      ],
+      "origins": [
+        "http://s04-storage.localhost:<port>"
+      ],
+      "hasSecret": false,
+      "snippet": "{\"id\":1,\"blob\":\"<key>\"}"
+    },
+    {
+      "key": "AIzaSYN...0s5L (39 chars) #fab6271895ff",
+      "provider": "google",
+      "sources": [
+        "network"
+      ],
+      "origins": [
+        "http://s05-network.localhost:<port>"
+      ],
+      "hasSecret": false,
+      "snippet": "[network-request] {\"maps\":\"<key>\"}"
+    },
+    {
+      "key": "sk-svca...mIIp (59 chars) #c7d84611abdb",
+      "provider": "openai",
+      "sources": [
+        "network"
+      ],
+      "origins": [
+        "http://s05-network.localhost:<port>"
+      ],
+      "hasSecret": false,
+      "snippet": "[network-request] Content-Type: application/json Authorization: Bearer <key>"
+    },
+    {
+      "key": "sk_test...FQl6 (36 chars) #8c12a3276b1f",
+      "provider": "stripe",
+      "sources": [
+        "network"
+      ],
+      "origins": [
+        "http://s05-network.localhost:<port>"
+      ],
+      "hasSecret": false,
+      "snippet": "[network-response] {\"billingSecret\":\"<key>\"}"
+    },
+    {
+      "key": "sk-or-v...SdyK (73 chars) #6546eddc761c",
+      "provider": "openrouter",
+      "sources": [
+        "network"
+      ],
+      "origins": [
+        "http://s05-network.localhost:<port>"
+      ],
+      "hasSecret": false,
+      "snippet": "[network-response] {\"feature\":\"x\",\"llmKey\":\"<key>\"}"
+    },
+    {
+      "key": "AQ.SYNT...Cbb_ (43 chars) #e75e8595a348",
+      "provider": "google",
+      "sources": [
+        "window"
+      ],
+      "origins": [
+        "http://s06-globals.localhost:<port>"
+      ],
+      "hasSecret": false,
+      "snippet": "[window-global] name=<key>"
+    },
+    {
+      "key": "AC05c81...dc98 (34 chars) #5e50da80b4d1",
+      "provider": "twilio",
+      "sources": [
+        "window"
+      ],
+      "origins": [
+        "http://s06-globals.localhost:<port>"
+      ],
+      "hasSecret": true,
+      "snippet": "[window-global] …nthFixtureNotRealq/l+BUVSprzxHw1Y1NPRB\",\"twilioAccountSid\":\"<key>\",\"twilioAuthToken\":\"<secret>\"} · secret: <secret>"
+    },
+    {
+      "key": "AKIASYN...6PZ2 (20 chars) #9536c106ed7f",
+      "provider": "aws",
+      "sources": [
+        "window"
+      ],
+      "origins": [
+        "http://s06-globals.localhost:<port>"
+      ],
+      "hasSecret": true,
+      "snippet": "[window-global] __RT_CONFIG__={\"awsAccessKeyId\":\"<key>\",\"awsSecretAccessKey\":\"SynthFixtureNotRealq/l+BUVSprzxHw1Y1… · secret: <secret>"
+    },
+    {
+      "key": "sk-or-v...5c4o (73 chars) #add8f43b2b4a",
+      "provider": "openrouter",
+      "sources": [
+        "dom"
+      ],
+      "origins": [
+        "http://s07-encoded.localhost:<port>"
+      ],
+      "hasSecret": false,
+      "snippet": "[decoded] {\"service\":\"llm\",\"token\":\"<key>\",\"note\":\"base64 wrapped config\"}"
+    },
+    {
+      "key": "AC5ef18...781b (34 chars) #21abeac0876b",
+      "provider": "twilio",
+      "sources": [
+        "script"
+      ],
+      "origins": [
+        "http://s08-config.localhost:<port>"
+      ],
+      "hasSecret": true,
+      "snippet": "in s08-config.localhost:58860/…/.env — TWILIO_ACCOUNT_SID=<key> TWILIO_AUTH_TOKEN=<secret> STRIPE_S… · secret: <secret>"
+    },
+    {
+      "key": "sk_test...9qLR (36 chars) #a1516fde2ecb",
+      "provider": "stripe",
+      "sources": [
+        "script"
+      ],
+      "origins": [
+        "http://s08-config.localhost:<port>"
+      ],
+      "hasSecret": false,
+      "snippet": "in s08-config.localhost:58860/…/.env — …TH_TOKEN=d37de6933808ad797bdff898513ef485 STRIPE_SECRET_KEY=<key>"
+    },
+    {
+      "key": "AQ.SYNT...j_j9 (43 chars) #bf0a39bc664d",
+      "provider": "google",
+      "sources": [
+        "script"
+      ],
+      "origins": [
+        "http://s08-config.localhost:<port>"
+      ],
+      "hasSecret": false,
+      "snippet": "in s08-config.localhost:58860/…/config.json — {\"env\":\"prod\",\"mapsKey\":\"<key>\"}"
+    },
+    {
+      "key": "sk-ant-...DzoU (108 chars) #a85db5f5bb15",
+      "provider": "anthropic",
+      "sources": [
+        "header"
+      ],
+      "origins": [
+        "http://s09-headers.localhost:<port>"
+      ],
+      "hasSecret": false,
+      "snippet": "response header — …t/html Cache-Control: no-store X-Debug-Config: build=1; key=<key> Date: Tue, 17 Nov 2026 03:19:03 GMT Connection: keep-alive…"
+    },
+    {
+      "key": "xoxb-00...PlBQ (42 chars) #b88088b1b0a5",
+      "provider": "slack",
+      "sources": [
+        "cookie"
+      ],
+      "origins": [
+        "http://s09-headers.localhost:<port>"
+      ],
+      "hasSecret": false,
+      "snippet": "cookie — session_blob=<key>"
+    },
+    {
+      "key": "AIzaSYN...5ujG (39 chars) #b6e878d425a3",
+      "provider": "google",
+      "sources": [
+        "network",
+        "resource"
+      ],
+      "origins": [
+        "http://s10-webrequest.localhost:<port>"
+      ],
+      "hasSecret": false,
+      "snippet": "http://maps.googleapis.com:58860/maps/api/staticmap?…key=AIzaSYNTHF…"
+    },
+    {
+      "key": "SG.0H_F...4iEC (69 chars) #1b8386c71612",
+      "provider": "unknown",
+      "sources": [
+        "dom",
+        "window"
+      ],
+      "origins": [
+        "http://s11-generic.localhost:<port>"
+      ],
+      "hasSecret": false,
+      "snippet": "SendGrid API key — …><p>Research fixture page. Every credential on this origin is synthetic.</p><script>var mailer={sg:\"<key>\"};var session={jwt:\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJzeW50aGV0aWMtZml4dHVyZSIsIm5vdG…"
+    },
+    {
+      "key": "npm_WDA...K3zW (40 chars) #7cce9031be9f",
+      "provider": "unknown",
+      "sources": [
+        "dom",
+        "window"
+      ],
+      "origins": [
+        "http://s11-generic.localhost:<port>"
+      ],
+      "hasSecret": false,
+      "snippet": "npm access token — …;var store={url:\"<postgre...5432 (66 chars) #4318af76b831>\"};var pkg={npm:\"<key>\"};var cfg={clientSecret:\"<WyeozFq...VQaF (24 chars) #30e783827b98>\"};</script><script type=\"text/plain\" id=\"pem\">---…"
+    },
+    {
+      "key": "eyJhbGc...cbzu (167 chars) #f46f27f24804",
+      "provider": "unknown",
+      "sources": [
+        "dom",
+        "window"
+      ],
+      "origins": [
+        "http://s11-generic.localhost:<port>"
+      ],
+      "hasSecret": false,
+      "snippet": "JSON Web Token (JWT) — …iler={sg:\"<SG.0H_F...4iEC (69 chars) #1b8386c71612>\"};var session={jwt:\"<key>\"};var store={url:\"<postgre...5432 (66 chars) #4318af76b831>\"};var pkg={npm…"
+    },
+    {
+      "key": "-----BE...---- (191 chars) #0751e3958ffa",
+      "provider": "unknown",
+      "sources": [
+        "dom"
+      ],
+      "origins": [
+        "http://s11-generic.localhost:<port>"
+      ],
+      "hasSecret": false,
+      "snippet": "Private key block — …3zW\"};var cfg={clientSecret:\"<WyeozFq...VQaF (24 chars) #30e783827b98>\"};</script><script type=\"text/plain\" id=\"pem\"><-----BE...---- (191 chars) #764f0fbdf868></script></body></html>"
+    },
+    {
+      "key": "postgre...5432 (66 chars) #4318af76b831",
+      "provider": "unknown",
+      "sources": [
+        "dom",
+        "window"
+      ],
+      "origins": [
+        "http://s11-generic.localhost:<port>"
+      ],
+      "hasSecret": false,
+      "snippet": "Connection string with embedded credentials — …3QgYSByZWFsIHRva2VuIiwiaWQiOiJTMTEifQ.Y3vkxE7DDPAOhEq5vlefxjWv62an6M8ELFefmKdcbzu\"};var store={url:\"<key>\"};var pkg={npm:\"<npm_WDA...K3zW (40 chars) #7cce9031be9f>\"};var cfg={clientSecret:\"WyeozFqKOhepk3tA6…"
+    },
+    {
+      "key": "WyeozFq...VQaF (24 chars) #30e783827b98",
+      "provider": "unknown",
+      "sources": [
+        "dom",
+        "window"
+      ],
+      "origins": [
+        "http://s11-generic.localhost:<port>"
+      ],
+      "hasSecret": false,
+      "snippet": "assigned to \"clientSecret\" — …ture.invalid:5432\"};var pkg={npm:\"<npm_WDA...K3zW (40 chars) #7cce9031be9f>\"};var cfg={clientSecret:\"<key>\"};</script><script type=\"text/plain\" id=\"pem\">-----BEGIN RSA PRIVATE KEY----- h1xIoh+X5gHJtToYfqGUA…"
+    },
+    {
+      "key": "AIzaSyE...0000 (39 chars) #72cd054c2193",
+      "provider": "google",
+      "sources": [
+        "dom",
+        "window"
+      ],
+      "origins": [
+        "http://s12-negatives.localhost:<port>"
+      ],
+      "hasSecret": false,
+      "snippet": "…-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"; var l2=\"<key>\"; var c5={apiKey:\"<process...Y_V2 (29 chars) #a3f46cbdf732>\"}; var c6={…"
+    },
+    {
+      "key": "sk-xxxx...xxxx (51 chars) #42db5df1bd9b",
+      "provider": "openai",
+      "sources": [
+        "dom",
+        "window"
+      ],
+      "origins": [
+        "http://s12-negatives.localhost:<port>"
+      ],
+      "hasSecret": false,
+      "snippet": "…hangeme-please-9999\"}; var c4={password:\"hunter2\"}; var l1=\"<key>\"; var l2=\"<AIzaSyE...0000 (39 chars) #72cd054c2193>\"; var c5=…"
+    },
+    {
+      "key": "process...Y_V2 (29 chars) #a3f46cbdf732",
+      "provider": "unknown",
+      "sources": [
+        "dom",
+        "window"
+      ],
+      "origins": [
+        "http://s12-negatives.localhost:<port>"
+      ],
+      "hasSecret": false,
+      "snippet": "assigned to \"apiKey\" — …xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"; var l2=\"<AIzaSyE...0000 (39 chars) #72cd054c2193>\"; var c5={apiKey:\"<key>\"}; var c6={apiKey:\"<org.acm...026x (26 chars) #bc98c1d09a8d>\"};</script><!-- <AC7f9d9...5ad9 (34 chars) #53d84bac1d4f> --…"
+    },
+    {
+      "key": "org.acm...026x (26 chars) #bc98c1d09a8d",
+      "provider": "unknown",
+      "sources": [
+        "dom",
+        "window"
+      ],
+      "origins": [
+        "http://s12-negatives.localhost:<port>"
+      ],
+      "hasSecret": false,
+      "snippet": "assigned to \"apiKey\" — …XAMPLE-NOT-A-REAL-KEY-0000000000\"; var c5={apiKey:\"<process...Y_V2 (29 chars) #a3f46cbdf732>\"}; var c6={apiKey:\"<key>\"};</script><!-- <AC7f9d9...5ad9 (34 chars) #53d84bac1d4f> --></body></html>"
+    }
+  ]
+}

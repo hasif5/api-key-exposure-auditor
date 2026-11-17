@@ -1,0 +1,1780 @@
+{
+  "meta": {
+    "generatedAt": "2026-11-17T03:17:53.163Z",
+    "node": "v24.22.1",
+    "extensionVersion": "1.13.0",
+    "gitCommit": "ee411f26c15ade4456bd583b67bb4a16d3277eb0",
+    "gitDirtyPaths": 2,
+    "note": "All credentials are synthetic. Provider responses in sections E and F are SIMULATED by local mocks."
+  },
+  "sections": {
+    "A_fixtureSelfCheck": {
+      "scenarios": 14,
+      "problems": []
+    },
+    "B_detectionVariants": {
+      "trials": 124,
+      "detected": 124,
+      "byVariant": {
+        "plain": {
+          "n": 14,
+          "ok": 14
+        },
+        "surrounded": {
+          "n": 14,
+          "ok": 14
+        },
+        "json": {
+          "n": 14,
+          "ok": 14
+        },
+        "jsAssign": {
+          "n": 14,
+          "ok": 14
+        },
+        "urlQuery": {
+          "n": 12,
+          "ok": 12
+        },
+        "htmlAttr": {
+          "n": 14,
+          "ok": 14
+        },
+        "minified": {
+          "n": 14,
+          "ok": 14
+        },
+        "base64": {
+          "n": 14,
+          "ok": 14
+        },
+        "percentEncoded": {
+          "n": 14,
+          "ok": 14
+        }
+      },
+      "byProvider": {
+        "google": {
+          "n": 9,
+          "ok": 9
+        },
+        "google-new": {
+          "n": 9,
+          "ok": 9
+        },
+        "openai-proj": {
+          "n": 9,
+          "ok": 9
+        },
+        "openai-legacy": {
+          "n": 9,
+          "ok": 9
+        },
+        "openai-svcacct": {
+          "n": 9,
+          "ok": 9
+        },
+        "anthropic": {
+          "n": 9,
+          "ok": 9
+        },
+        "openrouter": {
+          "n": 9,
+          "ok": 9
+        },
+        "xai": {
+          "n": 9,
+          "ok": 9
+        },
+        "github": {
+          "n": 9,
+          "ok": 9
+        },
+        "gitlab": {
+          "n": 9,
+          "ok": 9
+        },
+        "slack": {
+          "n": 9,
+          "ok": 9
+        },
+        "stripe-test": {
+          "n": 9,
+          "ok": 9
+        },
+        "twilio-pair": {
+          "n": 8,
+          "ok": 8
+        },
+        "aws-pair": {
+          "n": 8,
+          "ok": 8
+        }
+      },
+      "failed": [],
+      "perTrial": [
+        {
+          "subject": "google",
+          "variant": "plain",
+          "ok": true
+        },
+        {
+          "subject": "google",
+          "variant": "surrounded",
+          "ok": true
+        },
+        {
+          "subject": "google",
+          "variant": "json",
+          "ok": true
+        },
+        {
+          "subject": "google",
+          "variant": "jsAssign",
+          "ok": true
+        },
+        {
+          "subject": "google",
+          "variant": "urlQuery",
+          "ok": true
+        },
+        {
+          "subject": "google",
+          "variant": "htmlAttr",
+          "ok": true
+        },
+        {
+          "subject": "google",
+          "variant": "minified",
+          "ok": true
+        },
+        {
+          "subject": "google",
+          "variant": "base64",
+          "ok": true
+        },
+        {
+          "subject": "google",
+          "variant": "percentEncoded",
+          "ok": true
+        },
+        {
+          "subject": "google-new",
+          "variant": "plain",
+          "ok": true
+        },
+        {
+          "subject": "google-new",
+          "variant": "surrounded",
+          "ok": true
+        },
+        {
+          "subject": "google-new",
+          "variant": "json",
+          "ok": true
+        },
+        {
+          "subject": "google-new",
+          "variant": "jsAssign",
+          "ok": true
+        },
+        {
+          "subject": "google-new",
+          "variant": "urlQuery",
+          "ok": true
+        },
+        {
+          "subject": "google-new",
+          "variant": "htmlAttr",
+          "ok": true
+        },
+        {
+          "subject": "google-new",
+          "variant": "minified",
+          "ok": true
+        },
+        {
+          "subject": "google-new",
+          "variant": "base64",
+          "ok": true
+        },
+        {
+          "subject": "google-new",
+          "variant": "percentEncoded",
+          "ok": true
+        },
+        {
+          "subject": "openai-proj",
+          "variant": "plain",
+          "ok": true
+        },
+        {
+          "subject": "openai-proj",
+          "variant": "surrounded",
+          "ok": true
+        },
+        {
+          "subject": "openai-proj",
+          "variant": "json",
+          "ok": true
+        },
+        {
+          "subject": "openai-proj",
+          "variant": "jsAssign",
+          "ok": true
+        },
+        {
+          "subject": "openai-proj",
+          "variant": "urlQuery",
+          "ok": true
+        },
+        {
+          "subject": "openai-proj",
+          "variant": "htmlAttr",
+          "ok": true
+        },
+        {
+          "subject": "openai-proj",
+          "variant": "minified",
+          "ok": true
+        },
+        {
+          "subject": "openai-proj",
+          "variant": "base64",
+          "ok": true
+        },
+        {
+          "subject": "openai-proj",
+          "variant": "percentEncoded",
+          "ok": true
+        },
+        {
+          "subject": "openai-legacy",
+          "variant": "plain",
+          "ok": true
+        },
+        {
+          "subject": "openai-legacy",
+          "variant": "surrounded",
+          "ok": true
+        },
+        {
+          "subject": "openai-legacy",
+          "variant": "json",
+          "ok": true
+        },
+        {
+          "subject": "openai-legacy",
+          "variant": "jsAssign",
+          "ok": true
+        },
+        {
+          "subject": "openai-legacy",
+          "variant": "urlQuery",
+          "ok": true
+        },
+        {
+          "subject": "openai-legacy",
+          "variant": "htmlAttr",
+          "ok": true
+        },
+        {
+          "subject": "openai-legacy",
+          "variant": "minified",
+          "ok": true
+        },
+        {
+          "subject": "openai-legacy",
+          "variant": "base64",
+          "ok": true
+        },
+        {
+          "subject": "openai-legacy",
+          "variant": "percentEncoded",
+          "ok": true
+        },
+        {
+          "subject": "openai-svcacct",
+          "variant": "plain",
+          "ok": true
+        },
+        {
+          "subject": "openai-svcacct",
+          "variant": "surrounded",
+          "ok": true
+        },
+        {
+          "subject": "openai-svcacct",
+          "variant": "json",
+          "ok": true
+        },
+        {
+          "subject": "openai-svcacct",
+          "variant": "jsAssign",
+          "ok": true
+        },
+        {
+          "subject": "openai-svcacct",
+          "variant": "urlQuery",
+          "ok": true
+        },
+        {
+          "subject": "openai-svcacct",
+          "variant": "htmlAttr",
+          "ok": true
+        },
+        {
+          "subject": "openai-svcacct",
+          "variant": "minified",
+          "ok": true
+        },
+        {
+          "subject": "openai-svcacct",
+          "variant": "base64",
+          "ok": true
+        },
+        {
+          "subject": "openai-svcacct",
+          "variant": "percentEncoded",
+          "ok": true
+        },
+        {
+          "subject": "anthropic",
+          "variant": "plain",
+          "ok": true
+        },
+        {
+          "subject": "anthropic",
+          "variant": "surrounded",
+          "ok": true
+        },
+        {
+          "subject": "anthropic",
+          "variant": "json",
+          "ok": true
+        },
+        {
+          "subject": "anthropic",
+          "variant": "jsAssign",
+          "ok": true
+        },
+        {
+          "subject": "anthropic",
+          "variant": "urlQuery",
+          "ok": true
+        },
+        {
+          "subject": "anthropic",
+          "variant": "htmlAttr",
+          "ok": true
+        },
+        {
+          "subject": "anthropic",
+          "variant": "minified",
+          "ok": true
+        },
+        {
+          "subject": "anthropic",
+          "variant": "base64",
+          "ok": true
+        },
+        {
+          "subject": "anthropic",
+          "variant": "percentEncoded",
+          "ok": true
+        },
+        {
+          "subject": "openrouter",
+          "variant": "plain",
+          "ok": true
+        },
+        {
+          "subject": "openrouter",
+          "variant": "surrounded",
+          "ok": true
+        },
+        {
+          "subject": "openrouter",
+          "variant": "json",
+          "ok": true
+        },
+        {
+          "subject": "openrouter",
+          "variant": "jsAssign",
+          "ok": true
+        },
+        {
+          "subject": "openrouter",
+          "variant": "urlQuery",
+          "ok": true
+        },
+        {
+          "subject": "openrouter",
+          "variant": "htmlAttr",
+          "ok": true
+        },
+        {
+          "subject": "openrouter",
+          "variant": "minified",
+          "ok": true
+        },
+        {
+          "subject": "openrouter",
+          "variant": "base64",
+          "ok": true
+        },
+        {
+          "subject": "openrouter",
+          "variant": "percentEncoded",
+          "ok": true
+        },
+        {
+          "subject": "xai",
+          "variant": "plain",
+          "ok": true
+        },
+        {
+          "subject": "xai",
+          "variant": "surrounded",
+          "ok": true
+        },
+        {
+          "subject": "xai",
+          "variant": "json",
+          "ok": true
+        },
+        {
+          "subject": "xai",
+          "variant": "jsAssign",
+          "ok": true
+        },
+        {
+          "subject": "xai",
+          "variant": "urlQuery",
+          "ok": true
+        },
+        {
+          "subject": "xai",
+          "variant": "htmlAttr",
+          "ok": true
+        },
+        {
+          "subject": "xai",
+          "variant": "minified",
+          "ok": true
+        },
+        {
+          "subject": "xai",
+          "variant": "base64",
+          "ok": true
+        },
+        {
+          "subject": "xai",
+          "variant": "percentEncoded",
+          "ok": true
+        },
+        {
+          "subject": "github",
+          "variant": "plain",
+          "ok": true
+        },
+        {
+          "subject": "github",
+          "variant": "surrounded",
+          "ok": true
+        },
+        {
+          "subject": "github",
+          "variant": "json",
+          "ok": true
+        },
+        {
+          "subject": "github",
+          "variant": "jsAssign",
+          "ok": true
+        },
+        {
+          "subject": "github",
+          "variant": "urlQuery",
+          "ok": true
+        },
+        {
+          "subject": "github",
+          "variant": "htmlAttr",
+          "ok": true
+        },
+        {
+          "subject": "github",
+          "variant": "minified",
+          "ok": true
+        },
+        {
+          "subject": "github",
+          "variant": "base64",
+          "ok": true
+        },
+        {
+          "subject": "github",
+          "variant": "percentEncoded",
+          "ok": true
+        },
+        {
+          "subject": "gitlab",
+          "variant": "plain",
+          "ok": true
+        },
+        {
+          "subject": "gitlab",
+          "variant": "surrounded",
+          "ok": true
+        },
+        {
+          "subject": "gitlab",
+          "variant": "json",
+          "ok": true
+        },
+        {
+          "subject": "gitlab",
+          "variant": "jsAssign",
+          "ok": true
+        },
+        {
+          "subject": "gitlab",
+          "variant": "urlQuery",
+          "ok": true
+        },
+        {
+          "subject": "gitlab",
+          "variant": "htmlAttr",
+          "ok": true
+        },
+        {
+          "subject": "gitlab",
+          "variant": "minified",
+          "ok": true
+        },
+        {
+          "subject": "gitlab",
+          "variant": "base64",
+          "ok": true
+        },
+        {
+          "subject": "gitlab",
+          "variant": "percentEncoded",
+          "ok": true
+        },
+        {
+          "subject": "slack",
+          "variant": "plain",
+          "ok": true
+        },
+        {
+          "subject": "slack",
+          "variant": "surrounded",
+          "ok": true
+        },
+        {
+          "subject": "slack",
+          "variant": "json",
+          "ok": true
+        },
+        {
+          "subject": "slack",
+          "variant": "jsAssign",
+          "ok": true
+        },
+        {
+          "subject": "slack",
+          "variant": "urlQuery",
+          "ok": true
+        },
+        {
+          "subject": "slack",
+          "variant": "htmlAttr",
+          "ok": true
+        },
+        {
+          "subject": "slack",
+          "variant": "minified",
+          "ok": true
+        },
+        {
+          "subject": "slack",
+          "variant": "base64",
+          "ok": true
+        },
+        {
+          "subject": "slack",
+          "variant": "percentEncoded",
+          "ok": true
+        },
+        {
+          "subject": "stripe-test",
+          "variant": "plain",
+          "ok": true
+        },
+        {
+          "subject": "stripe-test",
+          "variant": "surrounded",
+          "ok": true
+        },
+        {
+          "subject": "stripe-test",
+          "variant": "json",
+          "ok": true
+        },
+        {
+          "subject": "stripe-test",
+          "variant": "jsAssign",
+          "ok": true
+        },
+        {
+          "subject": "stripe-test",
+          "variant": "urlQuery",
+          "ok": true
+        },
+        {
+          "subject": "stripe-test",
+          "variant": "htmlAttr",
+          "ok": true
+        },
+        {
+          "subject": "stripe-test",
+          "variant": "minified",
+          "ok": true
+        },
+        {
+          "subject": "stripe-test",
+          "variant": "base64",
+          "ok": true
+        },
+        {
+          "subject": "stripe-test",
+          "variant": "percentEncoded",
+          "ok": true
+        },
+        {
+          "subject": "twilio-pair",
+          "variant": "plain",
+          "ok": true
+        },
+        {
+          "subject": "twilio-pair",
+          "variant": "surrounded",
+          "ok": true
+        },
+        {
+          "subject": "twilio-pair",
+          "variant": "json",
+          "ok": true
+        },
+        {
+          "subject": "twilio-pair",
+          "variant": "jsAssign",
+          "ok": true
+        },
+        {
+          "subject": "twilio-pair",
+          "variant": "htmlAttr",
+          "ok": true
+        },
+        {
+          "subject": "twilio-pair",
+          "variant": "minified",
+          "ok": true
+        },
+        {
+          "subject": "twilio-pair",
+          "variant": "base64",
+          "ok": true
+        },
+        {
+          "subject": "twilio-pair",
+          "variant": "percentEncoded",
+          "ok": true
+        },
+        {
+          "subject": "aws-pair",
+          "variant": "plain",
+          "ok": true
+        },
+        {
+          "subject": "aws-pair",
+          "variant": "surrounded",
+          "ok": true
+        },
+        {
+          "subject": "aws-pair",
+          "variant": "json",
+          "ok": true
+        },
+        {
+          "subject": "aws-pair",
+          "variant": "jsAssign",
+          "ok": true
+        },
+        {
+          "subject": "aws-pair",
+          "variant": "htmlAttr",
+          "ok": true
+        },
+        {
+          "subject": "aws-pair",
+          "variant": "minified",
+          "ok": true
+        },
+        {
+          "subject": "aws-pair",
+          "variant": "base64",
+          "ok": true
+        },
+        {
+          "subject": "aws-pair",
+          "variant": "percentEncoded",
+          "ok": true
+        }
+      ]
+    },
+    "C_parity": {
+      "compared": 143,
+      "patternsJsDiffs": 0,
+      "interceptJsDiffs": 0,
+      "detailsPatterns": [],
+      "detailsIntercept": []
+    },
+    "C2_negativeControl": {
+      "mutationApplied": true,
+      "diffsDetected": 9,
+      "controlWorks": true
+    },
+    "D_falsePositiveCorpus": {
+      "invalid": {
+        "total": 15,
+        "flagged": 0
+      },
+      "lookalike": {
+        "total": 4,
+        "flagged": 4
+      },
+      "rows": [
+        {
+          "id": "S12-google-too-long",
+          "cls": "invalid",
+          "note": "Google-shaped but 8 chars too long (trailing boundary guard)",
+          "flagged": false,
+          "as": []
+        },
+        {
+          "id": "S12-google-too-short",
+          "cls": "invalid",
+          "note": "Google prefix with a body that is too short",
+          "flagged": false,
+          "as": []
+        },
+        {
+          "id": "S12-anthropic-too-short",
+          "cls": "invalid",
+          "note": "sk-ant- prefix with a body under the 90-char minimum",
+          "flagged": false,
+          "as": []
+        },
+        {
+          "id": "S12-openai-embedded",
+          "cls": "invalid",
+          "note": "OpenAI-shaped value glued to a preceding alphanumeric run (lookbehind guard)",
+          "flagged": false,
+          "as": []
+        },
+        {
+          "id": "S12-github-too-short",
+          "cls": "invalid",
+          "note": "ghp_ prefix with too few characters",
+          "flagged": false,
+          "as": []
+        },
+        {
+          "id": "S12-aws-id-too-long",
+          "cls": "invalid",
+          "note": "AWS-shaped ID with extra trailing capitals (trailing guard)",
+          "flagged": false,
+          "as": []
+        },
+        {
+          "id": "S12-twilio-sid-no-context",
+          "cls": "invalid",
+          "note": "AC + 32 hex with no Twilio wording nearby (context gate)",
+          "flagged": false,
+          "as": []
+        },
+        {
+          "id": "S12-md5",
+          "cls": "invalid",
+          "note": "32-hex digest (content hash)",
+          "flagged": false,
+          "as": []
+        },
+        {
+          "id": "S12-sha256",
+          "cls": "invalid",
+          "note": "64-hex digest (content hash)",
+          "flagged": false,
+          "as": []
+        },
+        {
+          "id": "S12-uuid",
+          "cls": "invalid",
+          "note": "RFC 4122 UUID",
+          "flagged": false,
+          "as": []
+        },
+        {
+          "id": "S12-chunk-name",
+          "cls": "invalid",
+          "note": "webpack-style chunk filename",
+          "flagged": false,
+          "as": []
+        },
+        {
+          "id": "S12-low-entropy-assign",
+          "cls": "invalid",
+          "note": "low-entropy value assigned to \"token\" (entropy gate)",
+          "flagged": false,
+          "as": []
+        },
+        {
+          "id": "S12-placeholder-assign",
+          "cls": "invalid",
+          "note": "placeholder assigned to \"apiKey\" (placeholder filter)",
+          "flagged": false,
+          "as": []
+        },
+        {
+          "id": "S12-changeme-assign",
+          "cls": "invalid",
+          "note": "changeme-style placeholder assigned to \"password\"",
+          "flagged": false,
+          "as": []
+        },
+        {
+          "id": "S12-short-assign",
+          "cls": "invalid",
+          "note": "short value assigned to \"password\" (length gate)",
+          "flagged": false,
+          "as": []
+        },
+        {
+          "id": "S12-openai-xxxx-placeholder",
+          "cls": "lookalike",
+          "note": "OpenAI-format placeholder made of x characters",
+          "flagged": true,
+          "as": [
+            "openai"
+          ]
+        },
+        {
+          "id": "S12-google-docs-example",
+          "cls": "lookalike",
+          "note": "Google-format documentation example",
+          "flagged": true,
+          "as": [
+            "google"
+          ]
+        },
+        {
+          "id": "S12-env-reference",
+          "cls": "lookalike",
+          "note": "environment-variable reference assigned to \"apiKey\"",
+          "flagged": true,
+          "as": [
+            "unknown (secret-like value assigned to \"apiKey\")"
+          ]
+        },
+        {
+          "id": "S12-app-identifier",
+          "cls": "lookalike",
+          "note": "reverse-DNS app identifier assigned to \"apiKey\"",
+          "flagged": true,
+          "as": [
+            "unknown (secret-like value assigned to \"apiKey\")"
+          ]
+        }
+      ]
+    },
+    "E_riskClassification": {
+      "simulated": true,
+      "total": 31,
+      "passed": 31,
+      "rows": [
+        {
+          "name": "openai: valid key (all probes 200)",
+          "provider": "openai",
+          "expectedLevel": "critical",
+          "observedLevel": "critical",
+          "observedLabel": "VALID KEY — full account access (bearer token; no IP/referrer restriction possible)",
+          "bypass": false,
+          "probes": 3,
+          "classifications": [
+            "enabled"
+          ],
+          "ok": true
+        },
+        {
+          "name": "openai: revoked key (all probes 401)",
+          "provider": "openai",
+          "expectedLevel": "unknown",
+          "observedLevel": "unknown",
+          "observedLabel": "Invalid / revoked key",
+          "bypass": false,
+          "probes": 3,
+          "classifications": [
+            "invalid-key"
+          ],
+          "ok": true
+        },
+        {
+          "name": "anthropic: valid key (all probes 200)",
+          "provider": "anthropic",
+          "expectedLevel": "critical",
+          "observedLevel": "critical",
+          "observedLabel": "VALID KEY — full account access (bearer token; no IP/referrer restriction possible)",
+          "bypass": false,
+          "probes": 2,
+          "classifications": [
+            "enabled"
+          ],
+          "ok": true
+        },
+        {
+          "name": "anthropic: revoked key (all probes 401)",
+          "provider": "anthropic",
+          "expectedLevel": "unknown",
+          "observedLevel": "unknown",
+          "observedLabel": "Invalid / revoked key",
+          "bypass": false,
+          "probes": 2,
+          "classifications": [
+            "invalid-key"
+          ],
+          "ok": true
+        },
+        {
+          "name": "openrouter: valid key (all probes 200)",
+          "provider": "openrouter",
+          "expectedLevel": "critical",
+          "observedLevel": "critical",
+          "observedLabel": "VALID KEY — full account access (bearer token; no IP/referrer restriction possible)",
+          "bypass": false,
+          "probes": 3,
+          "classifications": [
+            "enabled"
+          ],
+          "ok": true
+        },
+        {
+          "name": "openrouter: revoked key (all probes 401)",
+          "provider": "openrouter",
+          "expectedLevel": "unknown",
+          "observedLevel": "unknown",
+          "observedLabel": "Invalid / revoked key",
+          "bypass": false,
+          "probes": 3,
+          "classifications": [
+            "invalid-key"
+          ],
+          "ok": true
+        },
+        {
+          "name": "xai: valid key (all probes 200)",
+          "provider": "xai",
+          "expectedLevel": "critical",
+          "observedLevel": "critical",
+          "observedLabel": "VALID KEY — full account access (bearer token; no IP/referrer restriction possible)",
+          "bypass": false,
+          "probes": 2,
+          "classifications": [
+            "enabled"
+          ],
+          "ok": true
+        },
+        {
+          "name": "xai: revoked key (all probes 401)",
+          "provider": "xai",
+          "expectedLevel": "unknown",
+          "observedLevel": "unknown",
+          "observedLabel": "Invalid / revoked key",
+          "bypass": false,
+          "probes": 2,
+          "classifications": [
+            "invalid-key"
+          ],
+          "ok": true
+        },
+        {
+          "name": "openai: models 401 but another probe 200 (partial scope)",
+          "provider": "openai",
+          "expectedLevel": "critical",
+          "observedLevel": "critical",
+          "observedLabel": "VALID KEY — full account access (bearer token; no IP/referrer restriction possible)",
+          "bypass": false,
+          "probes": 3,
+          "classifications": [
+            "invalid-key",
+            "enabled"
+          ],
+          "ok": true
+        },
+        {
+          "name": "openai: every probe 403 insufficient permissions",
+          "provider": "openai",
+          "expectedLevel": "unknown",
+          "observedLevel": "unknown",
+          "observedLabel": "Invalid / revoked key",
+          "bypass": false,
+          "probes": 3,
+          "classifications": [
+            "invalid-key"
+          ],
+          "ok": true,
+          "note": "OBSERVATION: HTTP 403 is classified invalid-key, so a valid key that lacks scope on every probe is labelled invalid/revoked."
+        },
+        {
+          "name": "openai: every probe 429 (quota exceeded)",
+          "provider": "openai",
+          "expectedLevel": "unknown",
+          "observedLevel": "unknown",
+          "observedLabel": "Not reachable",
+          "bypass": false,
+          "probes": 9,
+          "classifications": [
+            "over-quota"
+          ],
+          "ok": true,
+          "note": "OBSERVATION: over-quota means the key authenticated, but the bearer assessor reports \"Not reachable\" (level unknown)."
+        },
+        {
+          "name": "twilio: valid pair",
+          "provider": "twilio",
+          "expectedLevel": "critical",
+          "observedLevel": "critical",
+          "observedLabel": "VALID — full Twilio account (SMS/voice/numbers + billing)",
+          "bypass": false,
+          "probes": 6,
+          "classifications": [
+            "enabled"
+          ],
+          "ok": true
+        },
+        {
+          "name": "twilio: wrong token (401)",
+          "provider": "twilio",
+          "expectedLevel": "unknown",
+          "observedLevel": "unknown",
+          "observedLabel": "Invalid / not reachable",
+          "bypass": false,
+          "probes": 6,
+          "classifications": [
+            "invalid-key"
+          ],
+          "ok": true
+        },
+        {
+          "name": "twilio: SID found but no token nearby",
+          "provider": "twilio",
+          "expectedLevel": "unknown",
+          "observedLevel": "unknown",
+          "observedLabel": "Account SID exposed (no Auth Token found nearby)",
+          "bypass": false,
+          "probes": 0,
+          "classifications": [
+            "inconclusive"
+          ],
+          "ok": true,
+          "note": "No network call is made when the pair is incomplete."
+        },
+        {
+          "name": "aws: valid pair (STS 200)",
+          "provider": "aws",
+          "expectedLevel": "critical",
+          "observedLevel": "critical",
+          "observedLabel": "VALID AWS credentials — programmatic account access (IAM-scoped; no IP/referrer restriction)",
+          "bypass": false,
+          "probes": 1,
+          "classifications": [
+            "enabled"
+          ],
+          "ok": true
+        },
+        {
+          "name": "aws: invalid pair (403 InvalidClientTokenId)",
+          "provider": "aws",
+          "expectedLevel": "unknown",
+          "observedLevel": "unknown",
+          "observedLabel": "Invalid / not reachable",
+          "bypass": false,
+          "probes": 1,
+          "classifications": [
+            "invalid-key"
+          ],
+          "ok": true
+        },
+        {
+          "name": "aws: ID found but no secret nearby",
+          "provider": "aws",
+          "expectedLevel": "unknown",
+          "observedLevel": "unknown",
+          "observedLabel": "Access Key ID exposed (no Secret Access Key found nearby)",
+          "bypass": false,
+          "probes": 0,
+          "classifications": [
+            "inconclusive"
+          ],
+          "ok": true
+        },
+        {
+          "name": "github: valid (200 login)",
+          "provider": "github",
+          "expectedLevel": "critical",
+          "observedLevel": "critical",
+          "observedLabel": "VALID KEY — full account access (bearer token; no IP/referrer restriction possible)",
+          "bypass": false,
+          "probes": 1,
+          "classifications": [
+            "enabled"
+          ],
+          "ok": true
+        },
+        {
+          "name": "github: bad credentials (401)",
+          "provider": "github",
+          "expectedLevel": "unknown",
+          "observedLevel": "unknown",
+          "observedLabel": "Invalid / revoked key",
+          "bypass": false,
+          "probes": 1,
+          "classifications": [
+            "invalid-key"
+          ],
+          "ok": true
+        },
+        {
+          "name": "gitlab: valid (200 username)",
+          "provider": "gitlab",
+          "expectedLevel": "critical",
+          "observedLevel": "critical",
+          "observedLabel": "VALID KEY — full account access (bearer token; no IP/referrer restriction possible)",
+          "bypass": false,
+          "probes": 1,
+          "classifications": [
+            "enabled"
+          ],
+          "ok": true
+        },
+        {
+          "name": "gitlab: 401",
+          "provider": "gitlab",
+          "expectedLevel": "unknown",
+          "observedLevel": "unknown",
+          "observedLabel": "Invalid / revoked key",
+          "bypass": false,
+          "probes": 1,
+          "classifications": [
+            "invalid-key"
+          ],
+          "ok": true
+        },
+        {
+          "name": "slack: ok:true",
+          "provider": "slack",
+          "expectedLevel": "critical",
+          "observedLevel": "critical",
+          "observedLabel": "VALID KEY — full account access (bearer token; no IP/referrer restriction possible)",
+          "bypass": false,
+          "probes": 1,
+          "classifications": [
+            "enabled"
+          ],
+          "ok": true
+        },
+        {
+          "name": "slack: HTTP 200 with ok:false invalid_auth",
+          "provider": "slack",
+          "expectedLevel": "unknown",
+          "observedLevel": "unknown",
+          "observedLabel": "Invalid / revoked key",
+          "bypass": false,
+          "probes": 1,
+          "classifications": [
+            "invalid-key"
+          ],
+          "ok": true,
+          "note": "Slack returns HTTP 200 for bad tokens; the verdict must come from the JSON body."
+        },
+        {
+          "name": "stripe: valid (200 account)",
+          "provider": "stripe",
+          "expectedLevel": "critical",
+          "observedLevel": "critical",
+          "observedLabel": "VALID KEY — full account access (bearer token; no IP/referrer restriction possible)",
+          "bypass": false,
+          "probes": 1,
+          "classifications": [
+            "enabled"
+          ],
+          "ok": true
+        },
+        {
+          "name": "stripe: 401",
+          "provider": "stripe",
+          "expectedLevel": "unknown",
+          "observedLevel": "unknown",
+          "observedLabel": "Invalid / revoked key",
+          "bypass": false,
+          "probes": 1,
+          "classifications": [
+            "invalid-key"
+          ],
+          "ok": true
+        },
+        {
+          "name": "google: invalid/revoked key everywhere",
+          "provider": "google",
+          "expectedLevel": "unknown",
+          "observedLevel": "unknown",
+          "observedLabel": "No reachable service",
+          "bypass": false,
+          "probes": 34,
+          "classifications": [
+            "invalid-key"
+          ],
+          "ok": true
+        },
+        {
+          "name": "google: referrer-restricted everywhere",
+          "provider": "google",
+          "expectedLevel": "restricted",
+          "observedLevel": "restricted",
+          "observedLabel": "Restricted (referrer/IP locked)",
+          "bypass": false,
+          "probes": 34,
+          "classifications": [
+            "restricted-referer"
+          ],
+          "ok": true
+        },
+        {
+          "name": "google: APIs not enabled everywhere",
+          "provider": "google",
+          "expectedLevel": "unknown",
+          "observedLevel": "unknown",
+          "observedLabel": "No reachable service",
+          "bypass": false,
+          "probes": 34,
+          "classifications": [
+            "api-not-enabled"
+          ],
+          "ok": true
+        },
+        {
+          "name": "google: unrestricted, billable Maps reachable",
+          "provider": "google",
+          "expectedLevel": "critical",
+          "observedLevel": "critical",
+          "observedLabel": "UNRESTRICTED — reachable from anywhere",
+          "bypass": false,
+          "probes": 34,
+          "classifications": [
+            "enabled",
+            "inconclusive",
+            "invalid-key"
+          ],
+          "ok": true
+        },
+        {
+          "name": "google: referrer-locked Maps but non-billable Gemini listing open",
+          "provider": "google",
+          "expectedLevel": "high",
+          "observedLevel": "high",
+          "observedLabel": "UNRESTRICTED — referrer restriction BYPASSED (works with no Referer)",
+          "bypass": true,
+          "probes": 34,
+          "classifications": [
+            "restricted-referer",
+            "enabled"
+          ],
+          "ok": true,
+          "note": "Referrer restriction is bypassable: some endpoints answer with no Referer."
+        },
+        {
+          "name": "google: Static Maps HTTP 200 text/plain error must not count as enabled",
+          "provider": "google",
+          "expectedLevel": "n/a",
+          "observedLevel": "invalid-key",
+          "observedLabel": "The Google Maps Platform server rejected your request. API k",
+          "ok": true,
+          "probes": 0
+        }
+      ]
+    },
+    "F_auditProbeInventory": {
+      "simulated": true,
+      "totalRequests": 119,
+      "unexpectedHostRequests": 0,
+      "rows": [
+        {
+          "provider": "google",
+          "includeGenerate": false,
+          "requests": 34,
+          "probes": 34,
+          "billableProbes": 25,
+          "billableEndpoints": [
+            "Maps / Static Maps",
+            "Maps / Geocoding",
+            "Maps / Directions",
+            "Maps / Distance Matrix",
+            "Maps / Elevation",
+            "Maps / Time Zone",
+            "Maps / Roads (nearestRoads)",
+            "Maps / Routes API (New)",
+            "Places / Find Place (legacy)",
+            "Places / Text Search (legacy)",
+            "Places / Nearby Search (legacy)",
+            "Places / Place Details (legacy)",
+            "Places / Autocomplete (legacy)",
+            "Places / Text Search (New)",
+            "Places / Nearby Search (New)",
+            "Places / Place Details (New)",
+            "Places / Autocomplete (New)",
+            "Translate / Translate v2",
+            "Vision / annotate",
+            "Natural Language / analyzeSentiment",
+            "Text-to-Speech / synthesize",
+            "Speech-to-Text / recognize",
+            "Gemini / embedContent",
+            "YouTube / Data API v3",
+            "Vertex AI / Embeddings"
+          ],
+          "allNoReferrer": true,
+          "allCredentialsOmitted": true,
+          "hosts": [
+            "aiplatform.googleapis.com",
+            "generativelanguage.googleapis.com",
+            "identitytoolkit.googleapis.com",
+            "language.googleapis.com",
+            "maps.googleapis.com",
+            "places.googleapis.com",
+            "roads.googleapis.com",
+            "routes.googleapis.com",
+            "safebrowsing.googleapis.com",
+            "speech.googleapis.com",
+            "texttospeech.googleapis.com",
+            "translation.googleapis.com",
+            "vision.googleapis.com",
+            "youtube.googleapis.com"
+          ],
+          "unexpectedHosts": []
+        },
+        {
+          "provider": "google",
+          "includeGenerate": true,
+          "requests": 37,
+          "probes": 37,
+          "billableProbes": 28,
+          "billableEndpoints": [
+            "Maps / Static Maps",
+            "Maps / Geocoding",
+            "Maps / Directions",
+            "Maps / Distance Matrix",
+            "Maps / Elevation",
+            "Maps / Time Zone",
+            "Maps / Roads (nearestRoads)",
+            "Maps / Routes API (New)",
+            "Places / Find Place (legacy)",
+            "Places / Text Search (legacy)",
+            "Places / Nearby Search (legacy)",
+            "Places / Place Details (legacy)",
+            "Places / Autocomplete (legacy)",
+            "Places / Text Search (New)",
+            "Places / Nearby Search (New)",
+            "Places / Place Details (New)",
+            "Places / Autocomplete (New)",
+            "Translate / Translate v2",
+            "Vision / annotate",
+            "Natural Language / analyzeSentiment",
+            "Text-to-Speech / synthesize",
+            "Speech-to-Text / recognize",
+            "Gemini / embedContent",
+            "YouTube / Data API v3",
+            "Vertex AI / Embeddings",
+            "Gemini / generateContent",
+            "Gemini / Interactions API",
+            "Vertex AI / generateContent"
+          ],
+          "allNoReferrer": true,
+          "allCredentialsOmitted": true,
+          "hosts": [
+            "aiplatform.googleapis.com",
+            "generativelanguage.googleapis.com",
+            "identitytoolkit.googleapis.com",
+            "language.googleapis.com",
+            "maps.googleapis.com",
+            "places.googleapis.com",
+            "roads.googleapis.com",
+            "routes.googleapis.com",
+            "safebrowsing.googleapis.com",
+            "speech.googleapis.com",
+            "texttospeech.googleapis.com",
+            "translation.googleapis.com",
+            "vision.googleapis.com",
+            "youtube.googleapis.com"
+          ],
+          "unexpectedHosts": []
+        },
+        {
+          "provider": "openai",
+          "includeGenerate": false,
+          "requests": 3,
+          "probes": 3,
+          "billableProbes": 1,
+          "billableEndpoints": [
+            "OpenAI / Embeddings"
+          ],
+          "allNoReferrer": true,
+          "allCredentialsOmitted": true,
+          "hosts": [
+            "api.openai.com"
+          ],
+          "unexpectedHosts": []
+        },
+        {
+          "provider": "openai",
+          "includeGenerate": true,
+          "requests": 6,
+          "probes": 6,
+          "billableProbes": 4,
+          "billableEndpoints": [
+            "OpenAI / Embeddings",
+            "OpenAI / chat/completions",
+            "OpenAI / Images (DALL-E)",
+            "OpenAI / Audio TTS"
+          ],
+          "allNoReferrer": true,
+          "allCredentialsOmitted": true,
+          "hosts": [
+            "api.openai.com"
+          ],
+          "unexpectedHosts": []
+        },
+        {
+          "provider": "anthropic",
+          "includeGenerate": false,
+          "requests": 2,
+          "probes": 2,
+          "billableProbes": 0,
+          "billableEndpoints": [],
+          "allNoReferrer": true,
+          "allCredentialsOmitted": true,
+          "hosts": [
+            "api.anthropic.com"
+          ],
+          "unexpectedHosts": []
+        },
+        {
+          "provider": "anthropic",
+          "includeGenerate": true,
+          "requests": 3,
+          "probes": 3,
+          "billableProbes": 1,
+          "billableEndpoints": [
+            "Anthropic / messages"
+          ],
+          "allNoReferrer": true,
+          "allCredentialsOmitted": true,
+          "hosts": [
+            "api.anthropic.com"
+          ],
+          "unexpectedHosts": []
+        },
+        {
+          "provider": "openrouter",
+          "includeGenerate": false,
+          "requests": 3,
+          "probes": 3,
+          "billableProbes": 0,
+          "billableEndpoints": [],
+          "allNoReferrer": true,
+          "allCredentialsOmitted": true,
+          "hosts": [
+            "openrouter.ai"
+          ],
+          "unexpectedHosts": []
+        },
+        {
+          "provider": "openrouter",
+          "includeGenerate": true,
+          "requests": 4,
+          "probes": 4,
+          "billableProbes": 1,
+          "billableEndpoints": [
+            "OpenRouter / chat/completions"
+          ],
+          "allNoReferrer": true,
+          "allCredentialsOmitted": true,
+          "hosts": [
+            "openrouter.ai"
+          ],
+          "unexpectedHosts": []
+        },
+        {
+          "provider": "xai",
+          "includeGenerate": false,
+          "requests": 2,
+          "probes": 2,
+          "billableProbes": 1,
+          "billableEndpoints": [
+            "xAI / Embeddings"
+          ],
+          "allNoReferrer": true,
+          "allCredentialsOmitted": true,
+          "hosts": [
+            "api.x.ai"
+          ],
+          "unexpectedHosts": []
+        },
+        {
+          "provider": "xai",
+          "includeGenerate": true,
+          "requests": 3,
+          "probes": 3,
+          "billableProbes": 2,
+          "billableEndpoints": [
+            "xAI / Embeddings",
+            "xAI / chat/completions"
+          ],
+          "allNoReferrer": true,
+          "allCredentialsOmitted": true,
+          "hosts": [
+            "api.x.ai"
+          ],
+          "unexpectedHosts": []
+        },
+        {
+          "provider": "twilio",
+          "includeGenerate": false,
+          "requests": 6,
+          "probes": 6,
+          "billableProbes": 0,
+          "billableEndpoints": [],
+          "allNoReferrer": true,
+          "allCredentialsOmitted": true,
+          "hosts": [
+            "api.twilio.com"
+          ],
+          "unexpectedHosts": []
+        },
+        {
+          "provider": "twilio",
+          "includeGenerate": true,
+          "requests": 6,
+          "probes": 6,
+          "billableProbes": 0,
+          "billableEndpoints": [],
+          "allNoReferrer": true,
+          "allCredentialsOmitted": true,
+          "hosts": [
+            "api.twilio.com"
+          ],
+          "unexpectedHosts": []
+        },
+        {
+          "provider": "aws",
+          "includeGenerate": false,
+          "requests": 1,
+          "probes": 1,
+          "billableProbes": 0,
+          "billableEndpoints": [],
+          "allNoReferrer": true,
+          "allCredentialsOmitted": true,
+          "hosts": [
+            "sts.amazonaws.com"
+          ],
+          "unexpectedHosts": []
+        },
+        {
+          "provider": "aws",
+          "includeGenerate": true,
+          "requests": 1,
+          "probes": 1,
+          "billableProbes": 0,
+          "billableEndpoints": [],
+          "allNoReferrer": true,
+          "allCredentialsOmitted": true,
+          "hosts": [
+            "sts.amazonaws.com"
+          ],
+          "unexpectedHosts": []
+        },
+        {
+          "provider": "github",
+          "includeGenerate": false,
+          "requests": 1,
+          "probes": 1,
+          "billableProbes": 0,
+          "billableEndpoints": [],
+          "allNoReferrer": true,
+          "allCredentialsOmitted": true,
+          "hosts": [
+            "api.github.com"
+          ],
+          "unexpectedHosts": []
+        },
+        {
+          "provider": "github",
+          "includeGenerate": true,
+          "requests": 1,
+          "probes": 1,
+          "billableProbes": 0,
+          "billableEndpoints": [],
+          "allNoReferrer": true,
+          "allCredentialsOmitted": true,
+          "hosts": [
+            "api.github.com"
+          ],
+          "unexpectedHosts": []
+        },
+        {
+          "provider": "gitlab",
+          "includeGenerate": false,
+          "requests": 1,
+          "probes": 1,
+          "billableProbes": 0,
+          "billableEndpoints": [],
+          "allNoReferrer": true,
+          "allCredentialsOmitted": true,
+          "hosts": [
+            "gitlab.com"
+          ],
+          "unexpectedHosts": []
+        },
+        {
+          "provider": "gitlab",
+          "includeGenerate": true,
+          "requests": 1,
+          "probes": 1,
+          "billableProbes": 0,
+          "billableEndpoints": [],
+          "allNoReferrer": true,
+          "allCredentialsOmitted": true,
+          "hosts": [
+            "gitlab.com"
+          ],
+          "unexpectedHosts": []
+        },
+        {
+          "provider": "slack",
+          "includeGenerate": false,
+          "requests": 1,
+          "probes": 1,
+          "billableProbes": 0,
+          "billableEndpoints": [],
+          "allNoReferrer": true,
+          "allCredentialsOmitted": true,
+          "hosts": [
+            "slack.com"
+          ],
+          "unexpectedHosts": []
+        },
+        {
+          "provider": "slack",
+          "includeGenerate": true,
+          "requests": 1,
+          "probes": 1,
+          "billableProbes": 0,
+          "billableEndpoints": [],
+          "allNoReferrer": true,
+          "allCredentialsOmitted": true,
+          "hosts": [
+            "slack.com"
+          ],
+          "unexpectedHosts": []
+        },
+        {
+          "provider": "stripe",
+          "includeGenerate": false,
+          "requests": 1,
+          "probes": 1,
+          "billableProbes": 0,
+          "billableEndpoints": [],
+          "allNoReferrer": true,
+          "allCredentialsOmitted": true,
+          "hosts": [
+            "api.stripe.com"
+          ],
+          "unexpectedHosts": []
+        },
+        {
+          "provider": "stripe",
+          "includeGenerate": true,
+          "requests": 1,
+          "probes": 1,
+          "billableProbes": 0,
+          "billableEndpoints": [],
+          "allNoReferrer": true,
+          "allCredentialsOmitted": true,
+          "hosts": [
+            "api.stripe.com"
+          ],
+          "unexpectedHosts": []
+        }
+      ]
+    },
+    "G_auditGate": {
+      "popupGate": [
+        {
+          "line": 218,
+          "text": "auditBtn.disabled = !els.ack.checked;"
+        },
+        {
+          "line": 283,
+          "text": "auditBtn.disabled = !els.ack.checked;"
+        }
+      ],
+      "dashboardConfirm": [
+        {
+          "line": 156,
+          "text": "const ok = window.confirm("
+        },
+        {
+          "line": 159,
+          "text": "'Only proceed if these are your own keys. Continue?'"
+        },
+        {
+          "line": 490,
+          "text": "if (!window.confirm('Delete this finding and its audit history?')) return;"
+        },
+        {
+          "line": 1048,
+          "text": "if (!window.confirm('Delete all ' + fullList.length + ' heuristic matches from ' + domain + '?')) return;"
+        },
+        {
+          "line": 1139,
+          "text": "if (!window.confirm('Ignore \"' + domain + '\"?\\n\\nThis removes its currently logged keys and stops ' +"
+        },
+        {
+          "line": 1220,
+          "text": "if (!window.confirm('Permanently delete ALL logged findings and audit history?')) return;"
+        }
+      ],
+      "workerHandlers": [
+        {
+          "type": "GAKS_AUDIT",
+          "referencesConsent": false
+        },
+        {
+          "type": "GAKS_AUDIT_RAW",
+          "referencesConsent": false
+        }
+      ],
+      "summary": "Consent is enforced in the UI layer (popup checkbox, dashboard confirm). The service-worker audit message handlers contain no consent check."
+    }
+  }
+}
