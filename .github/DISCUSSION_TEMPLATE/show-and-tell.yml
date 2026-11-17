@@ -1,0 +1,18 @@
+title: "[Show and tell] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Share how you use the extension, a key you found and fixed in your own
+        project, or something you built around it. **Redact any real keys.**
+  - type: textarea
+    id: story
+    attributes:
+      label: What did you do?
+      description: Describe the project, what the extension surfaced, and how you resolved it.
+    validations:
+      required: true
+  - type: textarea
+    id: learned
+    attributes:
+      label: What did you learn? (optional)

@@ -1,5 +1,8 @@
 blank_issues_enabled: false
 contact_links:
+  - name: Ask a question or share an idea
+    url: https://github.com/hasif5/api-key-exposure-auditor/discussions
+    about: Usage questions, ideas, and show-and-tell belong in Discussions, not Issues.
   - name: Report a security vulnerability
     url: https://github.com/hasif5/api-key-exposure-auditor/security/advisories/new
     about: Please report vulnerabilities privately — do not open a public issue.

@@ -1,0 +1,33 @@
+title: "[Q&A] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Ask how to use the extension or interpret a result. Discussions are
+        public, so **never paste a real API key** — redact it (e.g. `AIza...XXXX`).
+        Found a reproducible bug? Open an issue instead. Found a vulnerability?
+        Report it privately via SECURITY.md.
+  - type: textarea
+    id: question
+    attributes:
+      label: Your question
+      description: What are you trying to do, and what is unclear?
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Passive detection
+        - Active audit
+        - Dashboard / export
+        - Installation
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Extension version and browser (optional)
+      placeholder: "e.g. 1.1.0, Chrome 130"

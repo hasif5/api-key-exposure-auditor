@@ -1,0 +1,30 @@
+title: "[Idea] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Share an idea for a new provider, detection improvement, or workflow.
+        Keep it within the project's scope — helping developers detect and fix
+        API keys exposed in their own projects. Well-formed ideas can be
+        converted into issues. Do not paste real keys.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / motivation
+      description: What are you trying to accomplish? What's missing today?
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: Your idea
+      description: What should the extension do? Which surface (detection, audit, dashboard, export)?
+    validations:
+      required: true
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope
+      options:
+        - label: This helps developers secure their own projects.
+          required: true

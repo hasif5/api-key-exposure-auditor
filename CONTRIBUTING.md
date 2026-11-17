@@ -54,7 +54,9 @@ See the [README](./README.md#project-structure) for the layout.
 - Fill out the PR checklist.
 
 We aim to respond to issues and PRs within a couple of days. If you're unsure
-whether an idea fits, open an issue first to discuss it.
+whether an idea fits, start a thread in
+[Discussions](https://github.com/hasif5/api-key-exposure-auditor/discussions)
+or open an issue first. Usage questions belong in Discussions.
 
 ## Releasing (maintainers)
 

@@ -239,6 +239,8 @@ Issues, bug reports, and PRs are welcome -- see [CONTRIBUTING.md](./CONTRIBUTING
 
 **Looking for a place to start?** Check out issues labeled [`good first issue`](https://github.com/hasif5/api-key-exposure-auditor/labels/good%20first%20issue) or [`help wanted`](https://github.com/hasif5/api-key-exposure-auditor/labels/help%20wanted).
 
+Questions, ideas, or something to show? Join the [Discussions](https://github.com/hasif5/api-key-exposure-auditor/discussions).
+
 Report vulnerabilities privately per [SECURITY.md](./SECURITY.md).
 
 ## Privacy
